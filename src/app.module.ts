@@ -1,12 +1,12 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { PrismaModule } from './prisma/prisma.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Module } from '@nestjs/common';  
 import { UserModule } from './user/user.module';
+import { dataSourceOptions } from 'database/data-source';
 
 @Module({
-  imports: [PrismaModule, UserModule],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    TypeOrmModule.forRoot(dataSourceOptions),
+    UserModule,
+  ],
 })
-export class AppModule {}
+export class AppModule { }
