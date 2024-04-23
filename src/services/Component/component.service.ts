@@ -1,9 +1,9 @@
 import {Injectable} from "@nestjs/common";
-import ComponentService from "../../models/componentService.class";
+import ComponentInteractorClass from "../../models/componentInteractor.class";
 
 @Injectable()
 
-export class ComponentServiceAPI extends ComponentService{
+export class ComponentService extends ComponentInteractorClass{
   findOne(id: number) {
     //Ici on fait le code : Exemple typeorm.find.machin mais je sais pas comment ca fonctionne
   }

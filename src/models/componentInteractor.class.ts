@@ -1,4 +1,4 @@
-export default abstract class ComponentService {
+export default abstract class ComponentInteractorClass {
   //create abstract function for a CRUD
   abstract create(): void;
   abstract read(): void;
