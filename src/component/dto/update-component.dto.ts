@@ -1,11 +1,4 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateComponentDto } from './create-component.dto';
+import {Component} from "../entities/component.entity";
 
-export class UpdateComponentDto extends PartialType(CreateComponentDto) {
-  id: number;
-  name: string;
-  price: number;
-  brand: string;
-  type: string;
-  metadata: [];
+export class UpdateComponentDto extends Component {
 }

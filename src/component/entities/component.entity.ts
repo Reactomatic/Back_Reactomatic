@@ -1,4 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
+import {ComponentType} from "../../enum/ComponentType";
 
 @Entity()
 export class Component {
@@ -15,7 +16,7 @@ export class Component {
 
   @Index()
   @Column()
-  type: string;
+  type: ComponentType;
 
   @Column()
   name: string;
@@ -27,5 +28,5 @@ export class Component {
   brand: string;
 
   @Column("simple-array", { default: [] })
-  metadata: string[];
+  metadata: {key: string, value: any}[];
 }

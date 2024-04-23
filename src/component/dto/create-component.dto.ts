@@ -1,8 +1,4 @@
-export class CreateComponentDto {
-  id: number;
-  name: string;
-  price: number;
-  brand: string;
-  type: string;
-  metadata: [];
+import {Component} from "../entities/component.entity";
+
+export class CreateComponentDto extends Component {
 }
