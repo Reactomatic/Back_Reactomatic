@@ -4,27 +4,5 @@ export class CreateComponentDto {
   price: number;
   brand: string;
   type: string;
-  power?: string;
-  certification?: string;
-  dimension?: string;
-  frametype?: string;
-  motherboardformat?: string;
-  gpu_size?: string;
-  powersupply_size?: string;
-  external_device_type?: string;
-  frequency?: string;
-  chipset?: string;
-  memory?: string;
-  bus?: string;
-  memorytype?: string;
-  capacity?: string;
-  latency?: string;
-  socket?: string;
-  motherboard_format?: string;
-  core?: string;
-  thread?: string;
-  fan_size?: string;
-  socket_support?: string;
-  sound_level?: string;
-  speed?: string;
+  metadata: [];
 }

@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { ComponentModule } from './component/component.module';
 import ComponentInteractorClass from "./models/componentInteractor.class";
-import { ComponentService } from "./services/Component/component.service";
+import { ComponentService } from "./component/component.service";
 
 @Module({
   imports: [ConfigurationModule,  ComponentModule],
