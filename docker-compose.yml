@@ -2,8 +2,8 @@ services:
   pgsql:
     image: postgres:alpine
     ports:
-      - '5432:5432'
-    container_name: 'pgsql'
+      - '5433:5432'
+    container_name: 'pgsqlReactomatic'
     restart: always
     volumes:
       - pg-data:/var/lib/postgresql/data
