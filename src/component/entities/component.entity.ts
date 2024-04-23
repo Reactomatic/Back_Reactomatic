@@ -4,6 +4,7 @@ export class Component {
     this.name = component?.name;
     this.price = component?.price;
     this.brand = component?.brand;
+    this.type = component?.type;
   }
 
   id: number;

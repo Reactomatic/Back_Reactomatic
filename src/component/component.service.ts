@@ -5,25 +5,20 @@ import ComponentInteractorClass from "../models/componentInteractor.class";
 
 @Injectable()
 export class ComponentService extends ComponentInteractorClass {
-  create(type: string): void {
+  create(component: CreateComponentDto): void {
+  }
+
+  update(type: string, component: CreateComponentDto): void {
     
   }
-  update(type: string): void {
+
+  delete(type: string, id: number): void {
     
   }
   findOne(type: string, id: number): void {
     
   }
-  read(type: string): void {
-    
-  }
-  delete(type: string): void {
-    
-  }
-  find(type: string): void {
-    
-  }
-  remove(id: number) {
-    
+  findAll(type: string) {
+
   }
 }

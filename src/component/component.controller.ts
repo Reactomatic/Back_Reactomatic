@@ -12,23 +12,23 @@ export class ComponentController {
     return this.componentService.create(createComponentDto);
   }
 
-  @Get()
-  findAll() {
-    return this.componentService.findAll();
+  @Get(':type')
+  findAll(@Param('type') type: string) {
+    return this.componentService.findAll(type);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.componentService.findOne(+id);
+  @Get(':type/:id')
+  findOne(@Param('type') type: string, @Param('id') id: string){
+    return this.componentService.findOne(type, +id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateComponentDto: UpdateComponentDto) {
-    return this.componentService.update(+id, updateComponentDto);
+  update(@Param('type') type: string, @Body() updateComponentDto: UpdateComponentDto) {
+    return this.componentService.update(type, updateComponentDto );
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.componentService.remove(+id);
+  @Delete(':type/:id')
+  delete(@Param('type') type: string,  @Param('id') id: string) {
+    return this.componentService.delete(type, +id);
   }
 }
