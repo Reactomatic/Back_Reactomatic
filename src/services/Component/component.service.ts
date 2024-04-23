@@ -4,27 +4,28 @@ import ComponentInteractorClass from "../../models/componentInteractor.class";
 @Injectable()
 
 export class ComponentService extends ComponentInteractorClass{
-  findOne(id: number) {
+
+  create(type:string) {
     //Ici on fait le code : Exemple typeorm.find.machin mais je sais pas comment ca fonctionne
   }
 
-  find() {
+  read(type:string) {
     //Ici on fait le code : Exemple typeorm.find.machin mais je sais pas comment ca fonctionne
   }
 
-  create() {
+  update(type:string) {
     //Ici on fait le code : Exemple typeorm.find.machin mais je sais pas comment ca fonctionne
   }
 
-  read() {
+  delete(type:string) {
     //Ici on fait le code : Exemple typeorm.find.machin mais je sais pas comment ca fonctionne
   }
 
-  update() {
+  find(type:string) {
     //Ici on fait le code : Exemple typeorm.find.machin mais je sais pas comment ca fonctionne
   }
 
-  delete() {
+  findOne(type:string, id:number) {
     //Ici on fait le code : Exemple typeorm.find.machin mais je sais pas comment ca fonctionne
   }
 
