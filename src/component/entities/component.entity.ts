@@ -1,3 +1,6 @@
+import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
+
+@Entity()
 export class Component {
   constructor(component?: Partial<Component>) {
     this.id = component?.id;
@@ -7,10 +10,22 @@ export class Component {
     this.type = component?.type;
   }
 
+  @PrimaryGeneratedColumn()
   id: number;
-  name: string;
-  price: number;
-  brand: string;
+
+  @Index()
+  @Column()
   type: string;
-  metadata: [];
+
+  @Column()
+  name: string;
+
+  @Column()
+  price: number;
+
+  @Column()
+  brand: string;
+
+  @Column("simple-array", { default: [] })
+  metadata: string[];
 }
