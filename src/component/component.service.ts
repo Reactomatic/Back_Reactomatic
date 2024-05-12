@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {Injectable, BadRequestException, NotFoundException, Logger} from '@nestjs/common';
 import { CreateComponentDto } from './dto/create-component.dto';
 import { UpdateComponentDto } from './dto/update-component.dto';
 import { ComponentType } from "../enum/ComponentType";
@@ -20,9 +20,9 @@ export class ComponentService extends ComponentInteractorClass {
     [ComponentType.CASE]: ["formFactor", "maxGPULength"],
     [ComponentType.POWERSUPPLY]: ["wattage", "efficiency"],
   };
-
   create(component: CreateComponentDto): Component {
     const newComponent = new Component(component);
+
     if (!this.validateMetadata(newComponent.type, newComponent.metadata)) {
       throw new BadRequestException('Les métadonnées fournies ne correspondent pas aux métadonnées attendues pour ce type de composant.');
     }
@@ -74,8 +74,22 @@ export class ComponentService extends ComponentInteractorClass {
   }
 
   validateMetadata(type: ComponentType, metadata: { key: string; value: any }[]): boolean {
-    const expectedMetadata = ComponentService.getExpectedMetadata(type);
+    const expectedMetadataKeys = ComponentService.getExpectedMetadata(type);
     const providedMetadataKeys = metadata.map(item => item.key);
-    return expectedMetadata.every(key => providedMetadataKeys.includes(key));
+
+    if (!Array.isArray(metadata)) {
+      throw new BadRequestException('Les métadonnées doivent être un tableau.');
+    }
+
+    const isValid = expectedMetadataKeys.length === providedMetadataKeys.length &&
+        expectedMetadataKeys.every(key => providedMetadataKeys.includes(key)) &&
+        providedMetadataKeys.every(key => expectedMetadataKeys.includes(key));
+    if (!isValid) {
+      throw new BadRequestException('Les clés des métadonnées fournies ne correspondent pas exactement aux clés attendues.');
+    }
+
+    return true;
   }
+
+
 }

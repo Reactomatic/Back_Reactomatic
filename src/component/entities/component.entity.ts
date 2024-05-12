@@ -9,6 +9,7 @@ export class Component {
     this.price = component?.price;
     this.brand = component?.brand;
     this.type = component?.type;
+    this.metadata = component?.metadata;
   }
 
   @PrimaryGeneratedColumn()
