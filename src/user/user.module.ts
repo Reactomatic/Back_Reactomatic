@@ -1,15 +1,16 @@
 import { Module } from '@nestjs/common';
-import { UserController } from './user.controller'; // Assurez-vous d'importer votre UserController
+import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { usersProviders } from './user.providers';
-import { DatabaseModule } from 'database/database.module'; // Le chemin doit être correct.
+import { DatabaseModule } from 'database/database.module'; 
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [UserController], // Ajoutez votre UserController ici
+  controllers: [UserController],
   providers: [
     ...usersProviders,
     UserService,
   ],
+  exports: [UserService],
 })
 export class UserModule {}
