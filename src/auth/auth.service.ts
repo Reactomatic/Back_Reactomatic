@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { User } from '../user/entities/user.entity';
 import * as argon2 from 'argon2';
-import { Auth } from './entities/auth.entity';
 
 @Injectable()
 export class AuthService {
@@ -22,15 +21,37 @@ export class AuthService {
     return result;
   }
 
-  async login(user: Auth) {
+  async login(user: { email: string; password: string }) {
     const userInDb = await this.usersService.findOneByEmail(user.email);
     if (userInDb && (await argon2.verify(userInDb.password, user.password))) {
-      const { password, ...result } = userInDb;
       return {
-        ...result,
-        access_token: this.jwtService.sign(result),
+        access_token: this.createToken(userInDb),
+        refresh_token: this.createRefreshToken(userInDb),
       };
     }
     return null;
+  }
+
+  async refresh(userId: number) {
+    const userInDb = await this.usersService.findOne(userId);
+    if (!userInDb) {
+      return null;
+    }
+    return {
+      access_token: this.createToken(userInDb),
+      refresh_token: this.createRefreshToken(userInDb),
+    };
+  }
+
+  private createToken(user: User) {
+    const { id, email, role } = user;
+    const payload = { sub: id, email, role };
+    return this.jwtService.sign(payload, { expiresIn: '15m' });
+  }
+
+  private createRefreshToken(user: User) {
+    const { id, email, role } = user;
+    const payload = { sub: id, email, role };
+    return this.jwtService.sign(payload, { expiresIn: '7d' });
   }
 }
