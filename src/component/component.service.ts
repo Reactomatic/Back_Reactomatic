@@ -39,12 +39,11 @@ export class ComponentService extends ComponentInteractorClass {
   }
 
   async update(type: ComponentType, id: number, updateComponentDto: UpdateComponentDto): Promise<Component> {
-    const componentToUpdate = await this.findOne(type, id);
     if (updateComponentDto.metadata && !this.validateMetadata(type, updateComponentDto.metadata)) {
       throw new BadRequestException('Invalid metadata for this type of component.');
     }
-    this.componentRepository.merge(componentToUpdate, updateComponentDto);
-    return this.componentRepository.save(componentToUpdate);
+    await this.componentRepository.update(id, updateComponentDto);
+    return this.componentRepository.findOneBy({id});
   }
   
 

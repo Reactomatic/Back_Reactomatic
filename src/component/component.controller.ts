@@ -23,8 +23,8 @@ export class ComponentController {
     return this.componentService.findOne(type, +id);
   }
 
-  @Patch(':id')
-  update(@Param('type') type: ComponentType, @Param('id') id: string, @Body() updateComponentDto: UpdateComponentDto) {
+  @Patch(':type/:id')
+  update(@Param('type') type: ComponentType, @Param('id') id: number, @Body() updateComponentDto: UpdateComponentDto) {
     return this.componentService.update(type, +id, updateComponentDto);
   }
 
