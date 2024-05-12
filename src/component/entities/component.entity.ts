@@ -1,4 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
+import {ComponentType} from "../../enum/ComponentType";
 
 @Entity()
 export class Component {
@@ -8,6 +9,7 @@ export class Component {
     this.price = component?.price;
     this.brand = component?.brand;
     this.type = component?.type;
+    this.metadata = component?.metadata;
   }
 
   @PrimaryGeneratedColumn()
@@ -15,7 +17,7 @@ export class Component {
 
   @Index()
   @Column()
-  type: string;
+  type: ComponentType;
 
   @Column()
   name: string;
@@ -26,6 +28,6 @@ export class Component {
   @Column()
   brand: string;
 
-  @Column("simple-array", { default: [] })
-  metadata: string[];
+  @Column('jsonb', {nullable: true})
+  metadata: {key: string, value: any}[];
 }
