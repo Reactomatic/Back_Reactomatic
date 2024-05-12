@@ -28,6 +28,6 @@ export class Component {
   @Column()
   brand: string;
 
-  @Column("simple-array", { default: [] })
+  @Column('jsonb', {nullable: true})
   metadata: {key: string, value: any}[];
 }
