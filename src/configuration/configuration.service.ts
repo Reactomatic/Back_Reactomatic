@@ -1,26 +1,45 @@
 import { Injectable } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { Repository } from 'typeorm';
+import { Configuration } from './entities/configuration.entity';
 import { CreateConfigurationDto } from './dto/create-configuration.dto';
 import { UpdateConfigurationDto } from './dto/update-configuration.dto';
 
 @Injectable()
 export class ConfigurationService {
+  constructor(
+    @Inject('CONFIGURATION_REPOSITORY')
+    private configurationRepository: Repository<Configuration>,
+  ) {}
+
+
   create(createConfigurationDto: CreateConfigurationDto) {
-    return 'This action adds a new configuration';
+    const newConfig = {
+      ...createConfigurationDto,
+    };
+    return this.configurationRepository.save(newConfig);
   }
 
   findAll() {
-    return `This action returns all configuration`;
+    return this.configurationRepository.find();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} configuration`;
+    return this.configurationRepository.findOneBy({ id });
+
   }
 
-  update(id: number, updateConfigurationDto: UpdateConfigurationDto) {
-    return `This action updates a #${id} configuration`;
+  findByUser(userId: number) {
+    return this.configurationRepository.find({ where: { user_id: userId }});
+  }
+
+  async update(id: number, updateConfigurationDto: UpdateConfigurationDto) {
+    await this.configurationRepository.update(id, updateConfigurationDto);
+    const updatedConfig = this.configurationRepository.findOneBy({ id });
+    return updatedConfig;
   }
 
   remove(id: number) {
-    return `This action removes a #${id} configuration`;
+    return this.configurationRepository.delete(id);
   }
 }
