@@ -22,6 +22,11 @@ export class ConfigurationController {
     return this.configurationService.findOne(+id);
   }
 
+  @Get('user/:userId')
+  findByUser(@Param('userId') userId: string) {
+    return this.configurationService.findByUser(+userId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateConfigurationDto: UpdateConfigurationDto) {
     return this.configurationService.update(+id, updateConfigurationDto);
