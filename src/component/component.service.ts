@@ -1,13 +1,21 @@
-import {Injectable, BadRequestException, NotFoundException, Logger} from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Inject, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateComponentDto } from './dto/create-component.dto';
 import { UpdateComponentDto } from './dto/update-component.dto';
-import { ComponentType } from "../enum/ComponentType";
-import { Component } from "./entities/component.entity";
-import ComponentInteractorClass from "../models/componentInteractor.class";
+import { ComponentType } from '../enum/ComponentType';
+import { Component } from './entities/component.entity';
+import ComponentInteractorClass from '../models/componentInteractor.class';
 
 @Injectable()
 export class ComponentService extends ComponentInteractorClass {
-  private components: Component[] = [];
+
+  constructor(
+    @Inject('COMPONENT_REPOSITORY')
+    private componentRepository: Repository<Component>,
+  ) {
+    super();
+  }
 
   private static DICO: Record<ComponentType, string[]> = {
     [ComponentType.PROCESSOR]: ["freq", "tdp", "socket"],
@@ -20,66 +28,58 @@ export class ComponentService extends ComponentInteractorClass {
     [ComponentType.CASE]: ["formFactor", "maxGPULength"],
     [ComponentType.POWERSUPPLY]: ["wattage", "efficiency"],
   };
-  create(component: CreateComponentDto): Component {
-    const newComponent = new Component(component);
 
+  async create(createComponentDto: CreateComponentDto): Promise<Component> {
+    const newComponent = this.componentRepository.create(createComponentDto);
+    Logger.log("New Component: " + JSON.stringify(newComponent));
     if (!this.validateMetadata(newComponent.type, newComponent.metadata)) {
-      throw new BadRequestException('Les métadonnées fournies ne correspondent pas aux métadonnées attendues pour ce type de composant.');
+      throw new BadRequestException('Invalid metadata for this type of component.');
     }
-    this.components.push(newComponent);
-    return newComponent;
+    return this.componentRepository.save(newComponent);
   }
 
-  update(type: ComponentType, updateComponentDto: UpdateComponentDto): Component {
-    const componentToUpdate = this.findOne(type, updateComponentDto.id);
+  async update(type: ComponentType, id: number, updateComponentDto: UpdateComponentDto): Promise<Component> {
+    const componentToUpdate = await this.findOne(type, id);
+    if (updateComponentDto.metadata && !this.validateMetadata(type, updateComponentDto.metadata)) {
+      throw new BadRequestException('Invalid metadata for this type of component.');
+    }
+    this.componentRepository.merge(componentToUpdate, updateComponentDto);
+    return this.componentRepository.save(componentToUpdate);
+  }
+  
 
-    if (updateComponentDto.name !== undefined) {
-      componentToUpdate.name = updateComponentDto.name;
+  async delete(type: ComponentType, id: number): Promise<void> {
+    const result = await this.componentRepository.delete({ id, type });
+    if (result.affected === 0) {
+      throw new NotFoundException('Component not found.');
     }
-    if (updateComponentDto.price !== undefined) {
-      componentToUpdate.price = updateComponentDto.price;
-    }
-    if (updateComponentDto.brand !== undefined) {
-      componentToUpdate.brand = updateComponentDto.brand;
-    }
-    if (updateComponentDto.metadata !== undefined) {
-      componentToUpdate.metadata = updateComponentDto.metadata;
-    }
-
-    return componentToUpdate;
   }
 
-  delete(type: ComponentType, id: number): void {
-    const index = this.components.findIndex(component => component.id === id && component.type === type);
-    if (index === -1) {
-      throw new NotFoundException('Composant introuvable');
-    }
-    this.components.splice(index, 1);
-  }
-
-  findOne(type: ComponentType, id: number): Component {
-    const component = this.components.find(component => component.id === id && component.type === type);
+  async findOne(type: ComponentType, id: number): Promise<Component> {
+    const component = await this.componentRepository.findOneBy({ id, type });
     if (!component) {
-      throw new NotFoundException('Composant introuvable');
+      throw new NotFoundException('Component not found.');
     }
     return component;
   }
 
-  findAll(type: ComponentType): Component[] {
-    return this.components.filter(component => component.type === type);
-  }
-
-  static getExpectedMetadata(type: ComponentType): string[] {
-    return ComponentService.DICO[type] || [];
+  async findAll(type: ComponentType): Promise<Component[]> {
+    return this.componentRepository.findBy({ type });
   }
 
   validateMetadata(type: ComponentType, metadata: { key: string; value: any }[]): boolean {
+
+    if (!Array.isArray(metadata)) {
+      Logger.log(metadata);
+      metadata = JSON.parse(metadata);
+      throw new BadRequestException('Les métadonnées doivent être un tableau.');
+    }
+
     const expectedMetadataKeys = ComponentService.getExpectedMetadata(type);
     const providedMetadataKeys = metadata.map(item => item.key);
 
-    if (!Array.isArray(metadata)) {
-      throw new BadRequestException('Les métadonnées doivent être un tableau.');
-    }
+    Logger.log("Expected Metadata Keys: " + JSON.stringify(ComponentService.getExpectedMetadata(type)));
+    Logger.log("Provided Metadata Keys: " + JSON.stringify(metadata.map(item => item.key)));  
 
     const isValid = expectedMetadataKeys.length === providedMetadataKeys.length &&
         expectedMetadataKeys.every(key => providedMetadataKeys.includes(key)) &&
@@ -90,6 +90,8 @@ export class ComponentService extends ComponentInteractorClass {
 
     return true;
   }
-
-
+  
+  static getExpectedMetadata(type: ComponentType): string[] {
+    return ComponentService.DICO[type] || [];
+  }
 }

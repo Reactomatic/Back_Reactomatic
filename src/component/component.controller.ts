@@ -24,8 +24,8 @@ export class ComponentController {
   }
 
   @Patch(':id')
-  update(@Param('type') type: ComponentType, @Body() updateComponentDto: UpdateComponentDto) {
-    return this.componentService.update(type, updateComponentDto );
+  update(@Param('type') type: ComponentType, @Param('id') id: string, @Body() updateComponentDto: UpdateComponentDto) {
+    return this.componentService.update(type, +id, updateComponentDto);
   }
 
   @Delete(':type/:id')
