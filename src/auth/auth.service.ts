@@ -17,8 +17,17 @@ export class AuthService {
       ...user,
       password: hashedPassword,
     });
-    const { password, ...result } = newUser;
-    return result;
+
+    const { password, ...result } = newUser; 
+
+    const access_token = this.createToken(newUser);
+    const refresh_token = this.createRefreshToken(newUser);
+
+    return {
+      ...result,
+      access_token,
+      refresh_token 
+    };
   }
 
   async login(user: { email: string; password: string }) {
