@@ -32,6 +32,10 @@ export class UserService {
     return this.usersRepository.findOneBy({ id });
   }
 
+  findOneByEmail(email: string): Promise<User> {
+    return this.usersRepository.findOneBy({ email });
+  }
+
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     if (updateUserDto.password) {
       updateUserDto.password = await argon2.hash(updateUserDto.password);
