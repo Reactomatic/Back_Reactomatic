@@ -25,12 +25,11 @@ export class ConfigurationService {
   }
 
   findOne(id: number) {
-    return this.configurationRepository.findOneBy({ id });
-
+    return this.configurationRepository.find({ where: {id: id}, relations: ['processors', 'motherboards', 'gpus', 'ventirads', 'memorys', 'storages', 'externaldevices', 'cases', 'powersupplys'] }); 
   }
 
   findByUser(userId: number) {
-    return this.configurationRepository.find({ where: { user_id: userId }});
+    return this.configurationRepository.find({ where: { user_id: userId }, relations: ['processors', 'motherboards', 'gpus', 'ventirads', 'memorys', 'storages', 'externaldevices', 'cases', 'powersupplys'] }); // Ajoutez l'option de jointure ici
   }
 
   async update(id: number, updateConfigurationDto: UpdateConfigurationDto) {

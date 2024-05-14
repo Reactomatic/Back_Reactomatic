@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Component } from 'src/component/entities/component.entity';
+import { Entity, Column, ManyToMany, PrimaryGeneratedColumn, JoinTable } from 'typeorm';
 
 @Entity()
 export class Configuration {
@@ -7,15 +8,15 @@ export class Configuration {
         this.name = configuration?.name;
         this.price = configuration?.price;
         this.user_id = configuration?.user_id;
-        this.processor_id = configuration?.processor_id;
-        this.motherboard_id = configuration?.motherboard_id;
-        this.gpu_id = configuration?.gpu_id;
-        this.ventirad_id = configuration?.ventirad_id;
-        this.memory_id = configuration?.memory_id;
-        this.storage_id = configuration?.storage_id;
-        this.externaldevice_id = configuration?.externaldevice_id;
-        this.case_id = configuration?.case_id;
-        this.powersupply_id = configuration?.powersupply_id;
+        this.processors = configuration?.processors;
+        this.motherboards = configuration?.motherboards;
+        this.gpus = configuration?.gpus;
+        this.ventirads = configuration?.ventirads;
+        this.memorys = configuration?.memorys;
+        this.storages = configuration?.storages;
+        this.externaldevices = configuration?.externaldevices;
+        this.cases = configuration?.cases;
+        this.powersupplys = configuration?.powersupplys;
     }
     
     @PrimaryGeneratedColumn()
@@ -32,48 +33,39 @@ export class Configuration {
     })
     user_id: number;
 
-    @Column({
-        nullable: true
-    })
-    processor_id: number;
+    @ManyToMany(() => Component)
+    @JoinTable()
+    processors: Component[];
 
-    @Column({
-        nullable: true
-    })
-    motherboard_id: number;
+    @ManyToMany(() => Component)
+    @JoinTable()
+    motherboards: Component[];
 
-    @Column({
-        nullable: true
-    })
-    gpu_id: number;
+    @ManyToMany(() => Component)
+    @JoinTable()
+    gpus: Component[];
 
-    @Column({
-        nullable: true
-    })
-    ventirad_id: number;
+    @ManyToMany(() => Component)
+    @JoinTable()
+    ventirads: Component[];
 
-    @Column({
-        nullable: true
-    })
-    memory_id: number;
+    @ManyToMany(() => Component)
+    @JoinTable()
+    memorys: Component[];
 
-    @Column({
-        nullable: true
-    })
-    storage_id: number;
+    @ManyToMany(() => Component)
+    @JoinTable()
+    storages: Component[];
 
-    @Column({
-        nullable: true
-    })
-    externaldevice_id: number;
+    @ManyToMany(() => Component)
+    @JoinTable()
+    externaldevices: Component[];
 
-    @Column({
-        nullable: true
-    })
-    case_id: number;
+    @ManyToMany(() => Component)
+    @JoinTable()
+    cases: Component[];
 
-    @Column({
-        nullable: true
-    })
-    powersupply_id: number;
+    @ManyToMany(() => Component)
+    @JoinTable()
+    powersupplys: Component[];
 }
