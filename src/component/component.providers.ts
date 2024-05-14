@@ -6,5 +6,6 @@ export const componentProviders = [
     provide: 'COMPONENT_REPOSITORY',
     useFactory: (dataSource: DataSource) => dataSource.getRepository(Component),
     inject: ['DATA_SOURCE'],
+    exports: ['COMPONENT_REPOSITORY'],
   },
 ];

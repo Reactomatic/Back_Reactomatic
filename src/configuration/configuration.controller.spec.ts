@@ -6,9 +6,16 @@ describe('ConfigurationController', () => {
   let controller: ConfigurationController;
 
   beforeEach(async () => {
+    const mockConfigurationRepository = {};
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ConfigurationController],
-      providers: [ConfigurationService],
+      providers: [
+        ConfigurationService,
+        {
+          provide: 'CONFIGURATION_REPOSITORY',
+          useValue: mockConfigurationRepository,
+        },
+      ],
     }).compile();
 
     controller = module.get<ConfigurationController>(ConfigurationController);
