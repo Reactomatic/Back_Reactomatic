@@ -23,6 +23,13 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Verify Dockerfile location
+      run: |
+        if [ ! -f ./Dockerfile ]; then
+          echo "Dockerfile not found!"
+          exit 1
+        fi
 
     - name: Build Docker image
       run: docker build -t ghcr.io/reactomatic/back_reactomatic:latest -f ./Dockerfile .
