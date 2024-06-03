@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigurationController } from './configuration.controller';
 import { ConfigurationService } from './configuration.service';
 
+
+
 describe('ConfigurationController', () => {
   let controller: ConfigurationController;
 
