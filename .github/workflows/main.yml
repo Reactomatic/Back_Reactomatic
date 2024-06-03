@@ -1,0 +1,57 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+    
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v3
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Docker image
+      run: docker build -t ghcr.io/Reactomatic/Back_Reactomatic:latest -f ./Dockerfile .
+
+    - name: Push Docker image to GitHub Container Registry
+      run: docker push ghcr.io/Reactomatic/Back_Reactomatic:latest
+
+    - name: Setup SSH
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -t rsa ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Update server and deploy with Docker
+      id: deploy-output
+      run: |
+        ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << EOF
+          sudo -S su ${{ secrets.SSH_CHANGED_USER }} bash -c "
+          cd ${{ secrets.SSH_CD_PATH }};
+          git pull
+          docker pull ghcr.io/Reactomatic/Back_Reactomatic:latest
+          docker-compose up -d --build &> deploy-error.log
+          if [[ -s deploy-error.log ]]; then
+            echo '::set-output name=error-message::$(cat deploy-error.log)'
+          else
+            echo 'Deployment successful!'
+          fi)"
+        EOF
