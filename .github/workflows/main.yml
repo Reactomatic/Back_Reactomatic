@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [docker]
   pull_request:
-    branches: [main]
+    branches: [docker]
 
 jobs:
   build-and-push:
@@ -12,7 +12,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    outputs:
     
     steps:
     - name: Check out the repository
