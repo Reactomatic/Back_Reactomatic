@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 jobs:
   build-and-push:
@@ -12,6 +12,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
     
     steps:
     - name: Check out the repository
@@ -25,10 +26,10 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build Docker image
-      run: docker build -t ghcr.io/Reactomatic/Back_Reactomatic:latest -f ./Dockerfile .
+      run: docker build -t ghcr.io/reactomatic/back_reactomatic:latest -f ./Dockerfile .
 
     - name: Push Docker image to GitHub Container Registry
-      run: docker push ghcr.io/Reactomatic/Back_Reactomatic:latest
+      run: docker push ghcr.io/reactomatic/back_reactomatic:latest
 
     - name: Setup SSH
       env:
@@ -46,7 +47,7 @@ jobs:
           sudo -S su ${{ secrets.SSH_CHANGED_USER }} bash -c "
           cd ${{ secrets.SSH_CD_PATH }};
           git pull
-          docker pull ghcr.io/Reactomatic/Back_Reactomatic:latest
+          docker pull ghcr.io/reactomatic/back_reactomatic:latest
           docker-compose up -d --build &> deploy-error.log
           if [[ -s deploy-error.log ]]; then
             echo '::set-output name=error-message::$(cat deploy-error.log)'
