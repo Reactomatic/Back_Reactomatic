@@ -26,13 +26,13 @@ jobs:
     
     - name: Verify Dockerfile location
       run: |
-        if [ ! -f ./Dockerfile ]; then
+        if [ ! -f ./dockerfile ]; then
           echo "Dockerfile not found!"
           exit 1
         fi
 
     - name: Build Docker image
-      run: docker build -t ghcr.io/reactomatic/back_reactomatic:latest -f ./Dockerfile .
+      run: docker build -t ghcr.io/reactomatic/back_reactomatic:latest -f ./dockerfile .
 
     - name: Push Docker image to GitHub Container Registry
       run: docker push ghcr.io/reactomatic/back_reactomatic:latest
