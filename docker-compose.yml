@@ -1,51 +1,15 @@
-version: '3.8'
-
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - .:/app
-      - /app/node_modules
-    ports:
-      - "3000:3000"
-    depends_on:
-      pgsql:
-        condition: service_healthy
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgres://postgres:root@pgsql:5432/reactomatic-db
-
-  frontend:
-    build:
-      context: ../Front_Reactomatic
-      dockerfile: Dockerfile
-    volumes:
-      - ../Front_Reactomatic:/app
-      - /app/node_modules
-    ports:
-      - "5173:5173"
-    environment:
-      - NODE_ENV=development
-
   pgsql:
     image: postgres:alpine
     ports:
-      - '5433:5432'
+      - '5432:5432'
     container_name: 'pgsqlReactomatic'
     restart: always
     volumes:
       - pg-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root
-      POSTGRES_DB: reactomatic-db
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
+      POSTGRES_USER: admin_reactomatic
+      POSTGRES_PASSWORD: RlSNVOnUmcz7VSrj
+      POSTGRES_DB: reactomatic
 volumes:
   pg-data:
