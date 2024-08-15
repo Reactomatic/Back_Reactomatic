@@ -1,11 +1,14 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Req } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Req, Patch } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { UpdateUserDto } from 'src/users/dto/update-user.dto';
+import { Request } from 'express';
+import { UsersService } from 'src/users/users.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService, private readonly usersService: UsersService) {}
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
@@ -33,6 +36,13 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req) {
     return this.authService.validateOAuthLogin(req.user);
+  }
+
+  @Patch('update-profile')
+  @UseGuards(AuthGuard('jwt'))
+  async updateProfile(@Req() req: Request, @Body() updateProfileDto: UpdateUserDto) {
+    const userId = req.user['userId'];
+    return this.usersService.updateProfile(userId, updateProfileDto);
   }
 
 }

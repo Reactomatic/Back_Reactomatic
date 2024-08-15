@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import * as argon2 from 'argon2';
+import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -18,7 +19,7 @@ export class AuthService {
     }
 
     const passwordMatch = await argon2.verify(user.password, pass).catch(e => {
-      return false; 
+      return false;
     });
 
     if (passwordMatch) {
@@ -35,7 +36,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { email: user.email, sub: user.id };
+    const payload = { email: user.email, sub: user.id, role: user.role };
+
     return {
       access_token: this.jwtService.sign(payload),
     };
@@ -81,5 +83,4 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
     };
   }
-
 }

@@ -10,7 +10,6 @@ import { GoogleStrategy } from './google.strategy';
 
 @Module({
   imports: [
-    UsersModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -20,9 +19,11 @@ import { GoogleStrategy } from './google.strategy';
         signOptions: { expiresIn: '60m' },
       }),
     }),
+    UsersModule
   ],
   providers: [AuthService, JwtStrategy, GoogleStrategy],
   controllers: [AuthController],
   exports: [AuthService, JwtModule],
+  
 })
 export class AuthModule {}
