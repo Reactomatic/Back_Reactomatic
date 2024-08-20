@@ -31,9 +31,13 @@ jobs:
       id: get_sha
       run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
+    - name: Normalize repository name
+      id: normalize_repo
+      run: echo "REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
         push: true
-        tags: ghcr.io/${{ github.repository }}/my-image:${{ env.BRANCH_NAME }}-${{ env.SHORT_SHA }}
+        tags: ghcr.io/${{ env.REPO_NAME }}/my-image:${{ env.BRANCH_NAME }}-${{ env.SHORT_SHA }}
