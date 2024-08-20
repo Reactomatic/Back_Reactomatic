@@ -25,7 +25,7 @@ jobs:
 
     - name: Extract branch name
       id: extract_branch
-      run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+      run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
     - name: Get short SHA
       id: get_sha
@@ -37,4 +37,3 @@ jobs:
         context: .
         push: true
         tags: ghcr.io/${{ github.repository }}/my-image:${{ env.BRANCH_NAME }}-${{ env.SHORT_SHA }}
-
