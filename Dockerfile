@@ -15,9 +15,6 @@ RUN npm ci
 # Bundle app source / copy all other files
 COPY . .
 
-# Install chokidar for reliable hot-reloading
-RUN npm install chokidar-cli -g
-
 # Build the app to the /dist folder
 RUN npm run build
 
