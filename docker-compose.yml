@@ -11,5 +11,24 @@ services:
       POSTGRES_USER: admin_reactomatic
       POSTGRES_PASSWORD: RlSNVOnUmcz7VSrj
       POSTGRES_DB: reactomatic
+
+  nest-app:
+    build:
+      dockerfile: Dockerfile
+      context: .
+      target: development
+    # Run in Debug Mode: npm run start:debug --> Don't forget to start your vscode debugger!
+    # Run in dev Mode: npm run start:dev  
+    command: npm run start:dev
+    depends_on:
+      - pgsql
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://admin_reactomatic:RlSNVOnUmcz7VSrj@pgsqlReactomatic:5432/reactomatic
+    volumes: 
+      - .:/app
+      - /app/node_modules
+
 volumes:
   pg-data:

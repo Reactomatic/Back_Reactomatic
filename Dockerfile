@@ -1,23 +1,48 @@
-# Utilise une image Node.js 20.16.0 officielle comme image de base
-FROM node:20.16.0-alpine
+# ! Important
+# Since we rely in our code to environment variables for e.g. db connection
+# this can only be run successfully with docker-compose file
 
-# Définit le répertoire de travail à l'intérieur du conteneur
-WORKDIR /usr/src/app
+# Specify node version and choose image
+# also name our image as development (can be anything)
+FROM node:20.16.0-alpine AS development
 
-# Copie les fichiers package.json et package-lock.json dans le conteneur
+# Specify our working directory, this is in our container/in our image
+WORKDIR /app
+
+# Copy the package.jsons from host to container
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
 COPY package*.json ./
 
-# Installe les dépendances de l'application
+# Here we install all the deps
 RUN npm install
 
-# Copie le reste des fichiers de l'application dans le conteneur
+# Bundle app source / copy all other files
 COPY . .
 
-# Compile l'application TypeScript en JavaScript
+# Build the app to the /dist folder
 RUN npm run build
 
-# Définit la commande par défaut pour démarrer l'application
-CMD ["npm", "run", "start:prod"]
+################
+## PRODUCTION ##
+################
+# Build another image named production
+FROM node:20.16.0-alpine AS production
 
-# Expose le port que l'application va utiliser
-EXPOSE 3000
+# Set node env to prod
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
+# Set Working Directory
+WORKDIR /app
+
+# Copy all from development stage
+COPY --from=development /app/ .
+
+EXPOSE 8080
+
+# Run app
+CMD [ "node", "dist/main" ]
+
+# Example Commands to build and run the dockerfile
+# docker build -t thomas-nest .
+# docker run thomas-nest
