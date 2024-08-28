@@ -32,5 +32,5 @@ COPY --from=development /app/ .
 
 EXPOSE 8080
 
-# Run app
+# Run
 CMD [ "node", "dist/main" ]
