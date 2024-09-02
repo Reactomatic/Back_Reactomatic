@@ -1,0 +1,65 @@
+{
+    "id": 1,
+    "name": "GeForce GTX 1080 Ti",
+    "price": 699.99,
+    "brand": "NVIDIA",
+    "category": "gpu",
+    "metadata": [
+        {
+            "key": "core_count",
+            "value": "3584"
+        },
+        {
+            "key": "core_clock",
+            "value": "1480 MHz"
+        },
+        {
+            "key": "memory",
+            "value": "11 GB"
+        },
+        {
+            "key": "memory_type",
+            "value": "GDDR5X"
+        },
+        {
+            "key": "memory_clock",
+            "value": "11000 MHz"
+        },
+        {
+            "key": "power",
+            "value": "250 W"
+        },
+        {
+            "key": "power_connector",
+            "value": "1x 6-pin, 1x 8-pin"
+        },
+        {
+            "key": "output",
+            "value": "3x DisplayPort, 1x HDMI, 1x DVI"
+        },
+        {
+            "key": "length",
+            "value": "10.5 inches"
+        },
+        {
+            "key": "height",
+            "value": "4.376 inches"
+        },
+        {
+            "key": "width",
+            "value": "2-slot"
+        }
+    ],
+    "priceByRetailer": [
+        {
+            "retailer": "Retailer A",
+            "price": 719.99,
+            "url": "https://retailer-a.com/product/gtx1080ti"
+        },
+        {
+            "retailer": "Retailer B",
+            "price": 699.99,
+            "url": "https://retailer-b.com/product/gtx1080ti"
+        }
+    ]
+}
