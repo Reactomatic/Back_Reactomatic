@@ -8,7 +8,7 @@ async function bootstrap() {
 
     // Activer CORS pour votre domaine spécifique
     app.enableCors({
-      origin: 'http://51.89.139.78.nip.io',
+      origin: '*',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       allowedHeaders: 'Content-Type, Accept, Authorization',
       credentials: true, // Si vous devez autoriser les cookies ou autres informations d'identification
