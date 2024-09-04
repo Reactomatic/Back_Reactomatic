@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, BadRequestException, Query, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, BadRequestException, Query, ValidationPipe, HttpException, HttpStatus } from '@nestjs/common';
 import { ComponentsService } from './components.service';
 import { CreateComponentDto } from './dto/create-component.dto';
 import { UpdateComponentDto } from './dto/update-component.dto';
@@ -28,15 +28,10 @@ export class ComponentsController {
     return this.componentsService.findByCategory(category);
   }
 
-  @Get('search-price')
-  async searchPrice(@Query(new ValidationPipe({ transform: true })) searchPriceDto: SearchPriceDto) {
-    const prices = await this.componentsService.scrapePrices(searchPriceDto.name, searchPriceDto.brand);
-    if (!prices.length) {
-      throw new BadRequestException('No valid prices found');
-    }
-    return prices;
+  @Post(':id/search')
+  searchPriceByName(@Param('id') id: string, @Body() searchPriceDto: SearchPriceDto) {
+    return this.componentsService.searchPricesByName(+id, searchPriceDto);
   }
-
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Post()

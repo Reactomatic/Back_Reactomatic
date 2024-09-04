@@ -9,5 +9,5 @@ export class UpdateComponentDto extends PartialType(CreateComponentDto) {
     price: number;
     brand: string;
     metadata?: {key: string, value: any}[];
-    priceByRetailer?: {retailer: string, price: number, url: string}[];
+    priceByRetailer?: { retailer: string; price: number; url: string }[];
 }

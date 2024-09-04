@@ -10,7 +10,7 @@ export class Component {
   @Column()
   name: string;
 
-  @Column()
+  @Column('decimal')
   price: number;
 
   @Column()
@@ -22,6 +22,6 @@ export class Component {
   @Column({ nullable: true, type: 'json' })
   metadata?: { key: string; value: any }[];
 
-  @Column({ nullable: true, type: 'json' })
-  priceByRetailer?: { retailer: string; price: number; url: string }[];
+  @Column('json', { nullable: true })
+  priceByRetailer?: { retailer: string, price: number, url: string }[];
 }

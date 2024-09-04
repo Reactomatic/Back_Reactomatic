@@ -1,65 +1,73 @@
 {
-    "id": 1,
-    "name": "GeForce GTX 1080 Ti",
-    "price": 699.99,
-    "brand": "NVIDIA",
-    "category": "gpu",
+    "id": 2,
+    "name": "ASUS ROG Strix Z490-E Gaming",
+    "price": 299.99,
+    "brand": "ASUS",
+    "category": "motherboard",
     "metadata": [
-        {
-            "key": "core_count",
-            "value": "3584"
-        },
-        {
-            "key": "core_clock",
-            "value": "1480 MHz"
-        },
-        {
-            "key": "memory",
-            "value": "11 GB"
-        },
-        {
-            "key": "memory_type",
-            "value": "GDDR5X"
-        },
-        {
-            "key": "memory_clock",
-            "value": "11000 MHz"
-        },
-        {
-            "key": "power",
-            "value": "250 W"
-        },
-        {
-            "key": "power_connector",
-            "value": "1x 6-pin, 1x 8-pin"
-        },
-        {
-            "key": "output",
-            "value": "3x DisplayPort, 1x HDMI, 1x DVI"
-        },
-        {
-            "key": "length",
-            "value": "10.5 inches"
-        },
-        {
-            "key": "height",
-            "value": "4.376 inches"
-        },
-        {
-            "key": "width",
-            "value": "2-slot"
-        }
+      {
+        "key": "chipset",
+        "value": "Intel Z490"
+      },
+      {
+        "key": "socket",
+        "value": "LGA 1200"
+      },
+      {
+        "key": "form_factor",
+        "value": "ATX"
+      },
+      {
+        "key": "memory_slots",
+        "value": "4"
+      },
+      {
+        "key": "max_memory",
+        "value": "128 GB"
+      },
+      {
+        "key": "memory_type",
+        "value": "DDR4"
+      },
+      {
+        "key": "memory_speed",
+        "value": "up to 4600 MHz"
+      },
+      {
+        "key": "pci_express_slots",
+        "value": "3 x PCIe 3.0 x16, 3 x PCIe 3.0 x1"
+      },
+      {
+        "key": "sata_ports",
+        "value": "6 x SATA 6Gb/s"
+      },
+      {
+        "key": "m2_slots",
+        "value": "2 x M.2"
+      },
+      {
+        "key": "usb_ports",
+        "value": "8 x USB 3.2, 4 x USB 2.0"
+      },
+      {
+        "key": "wifi",
+        "value": "Wi-Fi 6"
+      },
+      {
+        "key": "bluetooth",
+        "value": "Bluetooth 5.1"
+      }
     ],
     "priceByRetailer": [
-        {
-            "retailer": "Retailer A",
-            "price": 719.99,
-            "url": "https://retailer-a.com/product/gtx1080ti"
-        },
-        {
-            "retailer": "Retailer B",
-            "price": 699.99,
-            "url": "https://retailer-b.com/product/gtx1080ti"
-        }
+      {
+        "retailer": "Retailer C",
+        "price": 299.99,
+        "url": "https://retailer-c.com/product/asus-rog-strix-z490-e"
+      },
+      {
+        "retailer": "Retailer D",
+        "price": 279.99,
+        "url": "https://retailer-d.com/product/asus-rog-strix-z490-e"
+      }
     ]
-}
+  }

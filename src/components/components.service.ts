@@ -5,9 +5,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Component } from './entities/component.entity';
 import { ComponentType } from 'src/enum/componentsType';
-import { HttpService } from '@nestjs/axios';
-import { lastValueFrom } from 'rxjs';
-import * as cheerio from 'cheerio';
+import { SearchPriceDto } from './dto/search-price.dto';
+import * as puppeteer from 'puppeteer';
+
 
 @Injectable()
 export class ComponentsService {
@@ -17,7 +17,6 @@ export class ComponentsService {
   constructor(
     @InjectRepository(Component)
     private componentsRepository: Repository<Component>,
-    private readonly httpService: HttpService,
   ) { }
 
   async create(createComponentDto: CreateComponentDto): Promise<Component> {
@@ -57,65 +56,64 @@ export class ComponentsService {
     }
   }
 
-  async scrapePrices(name: string, brand: string): Promise<{ retailer: string, price: number, url: string }[]> {
-    const productQueries = [
-      { retailer: 'Amazon France', url: `https://www.amazon.fr/s?k=${encodeURIComponent(name)}+${encodeURIComponent(brand)}` },
-      { retailer: 'Amazon Germany', url: `https://www.amazon.de/s?k=${encodeURIComponent(name)}+${encodeURIComponent(brand)}` },
-      { retailer: 'Newegg', url: `https://www.newegg.com/p/pl?d=${encodeURIComponent(name)}+${encodeURIComponent(brand)}` },
+  async searchPricesByName(id: number, searchPriceDto: SearchPriceDto): Promise<{ priceByRetailer: any[] }> {
+    const { name } = searchPriceDto;
+    const { brand } = searchPriceDto;
+    const component = await this.findOne(id);
+    const browser = await puppeteer.launch({ headless: true });
+    const retailers = [
+      { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}+${brand}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal' },
+      { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}+${brand}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal' },
+      { name: 'Newegg', url: `https://www.newegg.com/p/pl?d=${name}+${brand}`, priceSelector: '.price-current', linkSelector: '.item-title' },
     ];
+    const priceByRetailer = [];
 
-    const prices = await Promise.all(
-      productQueries.map(async ({ retailer, url }) => {
-        this.logger.debug(`Fetching URL: ${url}`);
-
-        let response;
-        try {
-          response = await lastValueFrom(this.httpService.get(url));
-        } catch (err) {
-          this.logger.error(`HTTP request failed for ${retailer} with URL: ${url}, error: ${err.message}`);
-          return { retailer, price: NaN, url };
-        }
-
-        const html = response.data;
-        // Logging the first 500 characters of the HTML response for examination
-        this.logger.debug(`HTML response from ${retailer} (first 500 chars): ${html.substring(0, 500)}`);
-        const $ = cheerio.load(html);
-
-        let price: number = NaN;
-        let priceStr: string;
+    try {
+      for (const retailer of retailers) {
+        const page = await browser.newPage();
+        await page.goto(retailer.url, { waitUntil: 'domcontentloaded' });
 
         try {
-          if (retailer.includes('Amazon')) {
-            // Example selectors, these need to be verified and updated based on the actual HTML structure
-            priceStr = $('#price_inside_buybox').text() || $('.a-price-whole').text();
-            this.logger.debug(`Raw price string from ${retailer}: ${priceStr}`);
-            if (priceStr) {
-              priceStr = priceStr.replace(/,/g, '.'); // Replace commas with dots if necessary
-              price = parseFloat(priceStr.replace(/[^\d.-]/g, ''));
-              this.logger.debug(`Parsed price for ${retailer}: ${price}`);
-            }
-          } else if (retailer === 'Newegg') {
-            priceStr = $('.price-current strong').text();
-            this.logger.debug(`Raw price string from ${retailer}: ${priceStr}`);
-            if (priceStr) {
-              price = parseFloat(priceStr.replace(/[^\d.-]/g, ''));
-              this.logger.debug(`Parsed price for ${retailer}: ${price}`);
-            }
+          await page.waitForSelector(retailer.priceSelector, { timeout: 5000 });
+          await page.waitForSelector(retailer.linkSelector, { timeout: 5000 });
+
+          const priceElement = await page.$(retailer.priceSelector);
+          const linkElement = await page.$(retailer.linkSelector) as puppeteer.ElementHandle<HTMLAnchorElement>;
+
+          if (priceElement && linkElement) {
+            const price = await priceElement.evaluate(el => parseFloat(el.textContent.replace(/[^0-9,.]/g, '').replace(',', '.')));
+            const link = await linkElement.evaluate(el => el.href);
+
+            priceByRetailer.push({
+              retailer: retailer.name,
+              price,
+              url: link,
+            });
           }
         } catch (error) {
-          this.logger.error(`Error parsing price from ${retailer} at ${url}: ${error.message}`);
+          // Log specific errors for each retailer
+          this.logger.error(`Error searching prices for ${retailer.name}: ${error.message}`);
         }
 
-        if (isNaN(price)) {
-          this.logger.warn(`Price parsed as NaN for ${retailer} from URL: ${url}`);
-        }
+        await page.close();
+      }
+    } catch (error) {
+      this.logger.error(`Error in searchPricesByName: ${error.message}`);
+    } finally {
+      await browser.close();
+    }
 
-        return { retailer, price, url };
-      })
-    );
+    if (priceByRetailer.length > 0) {
+      // Trouver le prix le plus bas
+      const minPriceRetailer = priceByRetailer.reduce((prev, curr) => curr.price < prev.price ? curr : prev);
 
-    const validPrices = prices.filter(priceInfo => !isNaN(priceInfo.price) && priceInfo.price > 0);
-    this.logger.debug(`Valid prices found: ${JSON.stringify(validPrices)}`);
-    return validPrices;
+      // Mettre à jour le composant avec le prix le plus bas
+      component.price = minPriceRetailer.price;
+      component.priceByRetailer = priceByRetailer;
+      await this.componentsRepository.save(component);
+    }
+
+    return { priceByRetailer };
   }
+
 }
