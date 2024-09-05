@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import * as argon2 from 'argon2';
-import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -40,6 +39,7 @@ export class AuthService {
 
     return {
       access_token: this.jwtService.sign(payload),
+      user,
     };
   }
 
@@ -51,8 +51,9 @@ export class AuthService {
 
     const hashedPassword = await argon2.hash(createUserDto.password);
     createUserDto.password = hashedPassword;
-
-    return this.usersService.create(createUserDto);
+    const user = await this.usersService.create(createUserDto);
+    const token = this.jwtService.sign({ email: user.email, sub: user.id, role: user.role });
+    return {user, access_token: token}
   }
 
   async forgotPassword(email: string): Promise<void> {
