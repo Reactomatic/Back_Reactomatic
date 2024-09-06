@@ -20,41 +20,84 @@ export class ComponentsService {
   ) { }
 
   async create(createComponentDto: CreateComponentDto): Promise<Component> {
-    const component = this.componentsRepository.create(createComponentDto);
-    return await this.componentsRepository.save(component);
+    try {
+      const component = this.componentsRepository.create(createComponentDto);
+      return await this.componentsRepository.save(component);
+    } catch (error) {
+      this.logger.error(`Error creating component: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to create component');
+    }
   }
+  
 
   async findAll(): Promise<Component[]> {
-    return await this.componentsRepository.find();
+    try {
+      return await this.componentsRepository.find();
+    } catch (error) {
+      this.logger.error(`Error finding all components: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to retrieve components');
+    }
   }
+  
 
   async findOne(id: number): Promise<Component> {
-    const component = await this.componentsRepository.findOne({ where: { id } });
-    if (!component) {
-      throw new NotFoundException(`Component with ID ${id} not found`);
+    try {
+      const component = await this.componentsRepository.findOne({ where: { id } });
+      if (!component) {
+        throw new NotFoundException(`Component with ID ${id} not found`);
+      }
+      return component;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error finding component with ID ${id}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to retrieve component');
     }
-    return component;
   }
-
+  
   async findByCategory(category: ComponentType): Promise<Component[]> {
-    return await this.componentsRepository.find({ where: { category } });
+    try {
+      return await this.componentsRepository.find({ where: { category } });
+    } catch (error) {
+      this.logger.error(`Error finding components by category ${category}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to retrieve components by category');
+    }
   }
+  
 
   async update(id: number, updateComponentDto: UpdateComponentDto): Promise<Component> {
-    await this.componentsRepository.update(id, updateComponentDto);
-    const updatedComponent = await this.componentsRepository.findOne({ where: { id } });
-    if (!updatedComponent) {
-      throw new NotFoundException(`Component with ID ${id} not found`);
+    try {
+      const result = await this.componentsRepository.update(id, updateComponentDto);
+      if (result.affected === 0) {
+        throw new NotFoundException(`Component with ID ${id} not found`);
+      }
+      return await this.findOne(id);  // Re-use findOne to get the updated component
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error updating component with ID ${id}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to update component');
     }
-    return updatedComponent;
   }
+  
 
   async remove(id: number): Promise<void> {
-    const result = await this.componentsRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Component with ID ${id} not found`);
+    try {
+      const result = await this.componentsRepository.delete(id);
+      if (result.affected === 0) {
+        throw new NotFoundException(`Component with ID ${id} not found`);
+      }
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error removing component with ID ${id}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to remove component');
     }
   }
+  
 
   //   async searchPricesByName(id: number, searchPriceDto: SearchPriceDto): Promise<{ priceByRetailer: any[] }> {
   //     const { name } = searchPriceDto;
