@@ -93,3 +93,4 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
   }
+}
