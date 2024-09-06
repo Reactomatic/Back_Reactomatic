@@ -1,0 +1,73 @@
+{
+    "id": 2,
+    "name": "ASUS ROG Strix Z490-E Gaming",
+    "price": 299.99,
+    "brand": "ASUS",
+    "category": "motherboard",
+    "metadata": [
+      {
+        "key": "chipset",
+        "value": "Intel Z490"
+      },
+      {
+        "key": "socket",
+        "value": "LGA 1200"
+      },
+      {
+        "key": "form_factor",
+        "value": "ATX"
+      },
+      {
+        "key": "memory_slots",
+        "value": "4"
+      },
+      {
+        "key": "max_memory",
+        "value": "128 GB"
+      },
+      {
+        "key": "memory_type",
+        "value": "DDR4"
+      },
+      {
+        "key": "memory_speed",
+        "value": "up to 4600 MHz"
+      },
+      {
+        "key": "pci_express_slots",
+        "value": "3 x PCIe 3.0 x16, 3 x PCIe 3.0 x1"
+      },
+      {
+        "key": "sata_ports",
+        "value": "6 x SATA 6Gb/s"
+      },
+      {
+        "key": "m2_slots",
+        "value": "2 x M.2"
+      },
+      {
+        "key": "usb_ports",
+        "value": "8 x USB 3.2, 4 x USB 2.0"
+      },
+      {
+        "key": "wifi",
+        "value": "Wi-Fi 6"
+      },
+      {
+        "key": "bluetooth",
+        "value": "Bluetooth 5.1"
+      }
+    ],
+    "priceByRetailer": [
+      {
+        "retailer": "Retailer C",
+        "price": 299.99,
+        "url": "https://retailer-c.com/product/asus-rog-strix-z490-e"
+      },
+      {
+        "retailer": "Retailer D",
+        "price": 279.99,
+        "url": "https://retailer-d.com/product/asus-rog-strix-z490-e"
+      }
+    ]
+  }
