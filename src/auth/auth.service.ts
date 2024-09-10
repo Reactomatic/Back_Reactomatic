@@ -55,6 +55,7 @@ export class AuthService {
     const token = this.jwtService.sign({ email: user.email, sub: user.id, role: user.role });
     return {user, access_token: token}
   }
+  
 
   async forgotPassword(email: string): Promise<void> {
     const user = await this.usersService.findByEmail(email);
