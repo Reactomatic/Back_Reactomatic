@@ -2,43 +2,24 @@
 # also name our image as development (can be anything)
 FROM node:20.16.0-alpine AS development
 
-RUN apk update && apk add --no-cache \
-    ca-certificates \
-    libappindicator \
-    alsa-lib \
-    atk \
-    libc6-compat \
-    cairo \
-    cups-libs \
-    dbus \
-    expat \
-    fontconfig \
-    libgcc \
-    gconf \
-    gdk-pixbuf \
-    glib \
-    gtk+3.0 \
-    nspr \
-    nss \
-    pango \
-    libstdc++ \
-    libx11 \
-    libx11-xcb \
-    libxcb \
-    libxcomposite \
-    libxcursor \
-    libxdamage \
-    libxext \
-    libxfixes \
-    libxi \
-    libxrandr \
-    libxrender \
-    libxss \
-    libxtst \
-    lsb-release \
-    wget \
-    xdg-utils \
-    ttf-liberation
+# Update the package list
+RUN apk update
+
+# Install necessary certificates
+RUN apk add --no-cache ca-certificates
+
+# Install required libraries for app functionality
+RUN apk add --no-cache libappindicator alsa-lib atk libc6-compat cairo cups-libs dbus expat fontconfig libgcc
+
+# Install libraries for GTK and related components
+RUN apk add --no-cache gconf gdk-pixbuf glib gtk+3.0 nspr nss pango libstdc++ libx11
+
+# Install X11 libraries and utilities
+RUN apk add --no-cache libx11-xcb libxcb libxcomposite libxcursor libxdamage libxext libxfixes libxi libxrandr
+
+# Install additional libraries and tools
+RUN apk add --no-cache libxrender libxss libxtst lsb-release wget xdg-utils ttf-liberation
+
 
 # Specify our working directory, this is in our container/in our image
 WORKDIR /app
