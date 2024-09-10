@@ -11,11 +11,12 @@ import { SearchPriceDto } from './dto/search-price.dto';
 
 @Controller('components')
 export class ComponentsController {
-  constructor(private readonly componentsService: ComponentsService) {}
+  constructor(private readonly componentsService: ComponentsService) { }
 
   @Get()
   findAll() {
-    return this.componentsService.findAll();
+    //return this.componentsService.findAll();
+    return this.componentsService.updatePrices();
   }
 
   @Get(':id')
@@ -28,9 +29,17 @@ export class ComponentsController {
     return this.componentsService.findByCategory(category);
   }
 
+  @Get('search')
+  findByName(@Query('name') name: string) {
+    if (!name) {
+      throw new BadRequestException('Le paramètre de recherche "name" est requis');
+    }
+    return this.componentsService.findByName(name);
+  }
+
   @Post(':id/search')
-  searchPriceByName(@Param('id') id: string, @Body() searchPriceDto: SearchPriceDto) {
-    return this.componentsService.searchPricesByName(+id, searchPriceDto);
+  searchPriceByName(@Param('id') id: string, @Body() name: string) {
+    return this.componentsService.searchPricesByName(+id, name);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
