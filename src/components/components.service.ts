@@ -117,7 +117,7 @@ export class ComponentsService {
     const retailers = [
       { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.fr' },
       { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.de' },
-      //{ name: 'Newegg', url: `https://www.newegg.com/p/pl?d=${name}`, priceSelector: 'div.item-action', linkSelector: 'a[title="View Details"]' },
+
     ];
 
     const priceByRetailer = [];
@@ -156,47 +156,6 @@ export class ComponentsService {
             }
           }
 
-          // Custom logic for Newegg
-          // if (retailer.name === 'Newegg') {
-          //   console.log(`Searching for ${retailer.name} prices`);
-
-          //   const content = await page.content();
-          //   console.log(content);
-
-          //   await page.waitForSelector(retailer.priceSelector, { timeout: 20000 });
-
-          //   console.log('Price selector found');
-          //   const itemActionElement = await page.$(retailer.priceSelector);
-          //   if (itemActionElement) {
-          //     console.log('Item action element found');
-          //     const itemInfoElement = await page.evaluateHandle(el => el.previousElementSibling, itemActionElement);
-          //     if (itemInfoElement) {
-
-          //       const linkElement = await itemInfoElement.$('a[title="View Details"]');
-
-
-          //       console.log('Found link of the item');
-          //       const link = await linkElement.evaluate(el => el.href);
-
-          //       let price;
-          //       const priceCurrentElement = await itemActionElement.$('li.price-current');
-          //       if (priceCurrentElement) {
-          //         const integerPartElement = await priceCurrentElement.$('strong');
-          //         const decimalPartElement = await priceCurrentElement.$('sup');
-          //         const integerPart = await integerPartElement.evaluate(el => el.textContent.replace(',', ''));
-          //         const decimalPart = await decimalPartElement.evaluate(el => el.textContent);
-          //         price = parseFloat(`${integerPart}.${decimalPart}`);
-          //       }
-
-          //       priceByRetailer.push({
-          //         retailer: retailer.name,
-          //         price,
-          //         url: link,
-          //       });
-          //       console.log(`Price found for ${retailer.name}: ${price}`);
-          //     }
-          //   }
-          // }
         } catch (error) {
           this.logger.error(`Error searching prices for ${retailer.name}: ${error.message}`);
         }
@@ -224,12 +183,10 @@ export class ComponentsService {
     const arrayOfIDs = [1];
     for (const id of arrayOfIDs) {
       const component = await this.findOne(id);
-      // Wait for 1 hour (3600000 milliseconds)
       console.log(`Updating prices for ${component.name}`);
       await this.searchPricesByName(id, component.name);
       console.log(`Prices updated for ${component.name}`);
       console.log(`Waiting for 1 minute before updating prices for next component to not get blocked by the websites`);
-      //change from 1h to 10 seconds for testing purposes
 
       //change for 1 minutes
       await new Promise(resolve => setTimeout(resolve, 60000));
