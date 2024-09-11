@@ -112,11 +112,11 @@ export class ComponentsService {
     // Launch Puppeteer using puppeteer-extra with stealth
     const browser = await puppeteer
       .use(StealthPlugin())
-      .launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] },);
+      .launch({ headless: false, args: ['--no-sandbox', '--disable-setuid-sandbox'] },);
 
     const retailers = [
-      { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal' },
-      { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal' },
+      { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.fr' },
+      { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.de' },
       //{ name: 'Newegg', url: `https://www.newegg.com/p/pl?d=${name}`, priceSelector: 'div.item-action', linkSelector: 'a[title="View Details"]' },
     ];
 
@@ -136,15 +136,21 @@ export class ComponentsService {
             await page.waitForSelector(retailer.linkSelector, { timeout: 5000 });
 
             const priceElement = await page.$(retailer.priceSelector);
-            const linkElement: ElementHandle<HTMLAnchorElement> = await page.$('a');
+            const linkElement = await page.$(retailer.linkSelector);
             if (priceElement && linkElement) {
-              const price = await priceElement.evaluate(el => parseFloat(el.textContent.replace(/[^0-9,.]/g, '').replace(',', '.')));
-              const link = await linkElement.evaluate(el => el.href);
+              const price = await priceElement.evaluate(el => {
+                let text = el.textContent.replace(/[^\d,]/g, '');  // Supprime tout sauf les chiffres et les virgules
+                text = text.replace(',', '');  // Enlève la virgule
+                text = text.slice(0, -2) + '.' + text.slice(-2);  // Ajoute un point avant les deux derniers chiffres
+                return parseFloat(text);  // Convertit le texte en nombre flottant
+              });
+              const link = await linkElement.evaluate(el => el.getAttribute('href'));
+              console.log(`Link found: ${link}`);
 
               priceByRetailer.push({
                 retailer: retailer.name,
                 price,
-                url: link,
+                url: `${retailer.domain}${link}`,
               });
               console.log(`Price found for ${retailer.name}: ${price}`);
             }
