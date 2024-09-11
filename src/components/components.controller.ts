@@ -34,7 +34,6 @@ export class ComponentsController {
   searchPriceByName(@Param('id') id: string, @Body() name: string) {
     //return this.componentsService.searchPricesByName(+id, name);
     return this.componentsService.updatePrices();
-
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
