@@ -15,8 +15,8 @@ export class ComponentsController {
 
   @Get()
   findAll() {
-    //return this.componentsService.findAll();
-    return this.componentsService.updatePrices();
+    return this.componentsService.findAll();
+    //return this.componentsService.updatePrices();
   }
 
   @Get(':id')
