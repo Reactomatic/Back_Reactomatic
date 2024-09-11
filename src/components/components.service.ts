@@ -121,8 +121,7 @@ export class ComponentsService {
     // Launch Puppeteer using puppeteer-extra with stealth
     const browser = await puppeteer
       .use(StealthPlugin())
-      .launch({ headless: true },);
-    // , args: ['--no-sandbox', '--disable-setuid-sandbox']
+      .launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] },);
 
     const retailers = [
       { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal' },
