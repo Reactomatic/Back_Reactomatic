@@ -160,13 +160,17 @@ export class ComponentsService {
           // Custom logic for Newegg
           if (retailer.name === 'Newegg') {
             console.log(`Searching for ${retailer.name} prices`);
-            await page.waitForSelector(retailer.priceSelector, { timeout: 5000 });
-
+            console.log("Testing the await function :", await page.waitForSelector(retailer.priceSelector, { timeout: 10000 }))
+            await page.waitForSelector(retailer.priceSelector, { timeout: 10000 });
+            console.log('Price selector found');
             const itemActionElement = await page.$(retailer.priceSelector);
             if (itemActionElement) {
+              console.log('Item action element found');
               const itemInfoElement = await page.evaluateHandle(el => el.previousElementSibling, itemActionElement);
               if (itemInfoElement) {
+
                 const linkElement = await itemInfoElement.$('a[title="View Details"]');
+                console.log('Found link of the item');
                 const link = await linkElement.evaluate(el => el.href);
 
                 let price;
