@@ -117,7 +117,7 @@ export class ComponentsService {
     const retailers = [
       { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal' },
       { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal' },
-      { name: 'Newegg', url: `https://www.newegg.com/p/pl?d=${name}`, priceSelector: 'div.item-action', linkSelector: 'a[title="View Details"]' },
+      //{ name: 'Newegg', url: `https://www.newegg.com/p/pl?d=${name}`, priceSelector: 'div.item-action', linkSelector: 'a[title="View Details"]' },
     ];
 
     const priceByRetailer = [];
@@ -151,46 +151,46 @@ export class ComponentsService {
           }
 
           // Custom logic for Newegg
-          if (retailer.name === 'Newegg') {
-            console.log(`Searching for ${retailer.name} prices`);
+          // if (retailer.name === 'Newegg') {
+          //   console.log(`Searching for ${retailer.name} prices`);
 
-            const content = await page.content();
-            console.log(content);
+          //   const content = await page.content();
+          //   console.log(content);
 
-            await page.waitForSelector(retailer.priceSelector, { timeout: 20000 });
+          //   await page.waitForSelector(retailer.priceSelector, { timeout: 20000 });
 
-            console.log('Price selector found');
-            const itemActionElement = await page.$(retailer.priceSelector);
-            if (itemActionElement) {
-              console.log('Item action element found');
-              const itemInfoElement = await page.evaluateHandle(el => el.previousElementSibling, itemActionElement);
-              if (itemInfoElement) {
+          //   console.log('Price selector found');
+          //   const itemActionElement = await page.$(retailer.priceSelector);
+          //   if (itemActionElement) {
+          //     console.log('Item action element found');
+          //     const itemInfoElement = await page.evaluateHandle(el => el.previousElementSibling, itemActionElement);
+          //     if (itemInfoElement) {
 
-                const linkElement = await itemInfoElement.$('a[title="View Details"]');
+          //       const linkElement = await itemInfoElement.$('a[title="View Details"]');
 
 
-                console.log('Found link of the item');
-                const link = await linkElement.evaluate(el => el.href);
+          //       console.log('Found link of the item');
+          //       const link = await linkElement.evaluate(el => el.href);
 
-                let price;
-                const priceCurrentElement = await itemActionElement.$('li.price-current');
-                if (priceCurrentElement) {
-                  const integerPartElement = await priceCurrentElement.$('strong');
-                  const decimalPartElement = await priceCurrentElement.$('sup');
-                  const integerPart = await integerPartElement.evaluate(el => el.textContent.replace(',', ''));
-                  const decimalPart = await decimalPartElement.evaluate(el => el.textContent);
-                  price = parseFloat(`${integerPart}.${decimalPart}`);
-                }
+          //       let price;
+          //       const priceCurrentElement = await itemActionElement.$('li.price-current');
+          //       if (priceCurrentElement) {
+          //         const integerPartElement = await priceCurrentElement.$('strong');
+          //         const decimalPartElement = await priceCurrentElement.$('sup');
+          //         const integerPart = await integerPartElement.evaluate(el => el.textContent.replace(',', ''));
+          //         const decimalPart = await decimalPartElement.evaluate(el => el.textContent);
+          //         price = parseFloat(`${integerPart}.${decimalPart}`);
+          //       }
 
-                priceByRetailer.push({
-                  retailer: retailer.name,
-                  price,
-                  url: link,
-                });
-                console.log(`Price found for ${retailer.name}: ${price}`);
-              }
-            }
-          }
+          //       priceByRetailer.push({
+          //         retailer: retailer.name,
+          //         price,
+          //         url: link,
+          //       });
+          //       console.log(`Price found for ${retailer.name}: ${price}`);
+          //     }
+          //   }
+          // }
         } catch (error) {
           this.logger.error(`Error searching prices for ${retailer.name}: ${error.message}`);
         }

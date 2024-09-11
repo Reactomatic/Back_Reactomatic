@@ -29,6 +29,7 @@ export class ComponentsController {
     return this.componentsService.findByCategory(category);
   }
 
+  
 
   @Post(':id/search')
   searchPriceByName(@Param('id') id: string, @Body() name: string) {
