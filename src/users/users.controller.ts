@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -19,21 +19,36 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+  findOne(@Request() req, @Param('id') id: string) {
+    const user = req.user;
+    // Allow user to retrieve their own profile or if they are an admin
+    if (user.id === +id || user.role === UserRole.ADMIN) {
+      return this.usersService.findOne(+id);
+    } else {
+      throw new UnauthorizedException('You can only view your own profile.');
+    }
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  update(@Request() req, @Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    const user = req.user;
+    // Allow user to update their own profile or if they are an admin
+    if (user.id === +id || user.role === UserRole.ADMIN) {
+      return this.usersService.update(+id, updateUserDto);
+    } else {
+      throw new UnauthorizedException('You can only update your own profile.');
+    }
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  remove(@Request() req, @Param('id') id: string) {
+    const user = req.user;
+    // Allow user to delete their own profile or if they are an admin
+    if (user.id === +id || user.role === UserRole.ADMIN) {
+      return this.usersService.remove(+id);
+    } else {
+      throw new UnauthorizedException('You can only delete your own profile.');
+    }
   }
 
   @Get()
