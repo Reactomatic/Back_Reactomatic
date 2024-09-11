@@ -111,7 +111,7 @@ export class ComponentsService {
     // Launch Puppeteer using puppeteer-extra with stealth
     const browser = await puppeteer
       .use(StealthPlugin())
-      .launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] },);
+      .launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--incognito'] },);
 
     const retailers = [
       { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.fr' },
@@ -170,7 +170,7 @@ export class ComponentsService {
                 return parseFloat(text);  // Convertit le texte en nombre flottant
               })
 
-            const link = await linkElement.evaluate(el => el.getAttribute('href'));
+              const link = await linkElement.evaluate(el => el.getAttribute('href'));
               console.log(link)
 
               priceByRetailer.push({
@@ -207,7 +207,7 @@ export class ComponentsService {
 
   @Cron('0 0 0 * * *')
   async updatePrices(): Promise<void> {
-    const arrayOfIDs = [1, 3];
+    const arrayOfIDs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57];
     for (const id of arrayOfIDs) {
       const component = await this.findOne(id);
       // Wait for 1 hour (3600000 milliseconds)
