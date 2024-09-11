@@ -161,8 +161,11 @@ export class ComponentsService {
           if (retailer.name === 'Newegg') {
             console.log(`Searching for ${retailer.name} prices`);
 
+            const content = await page.content();
+            console.log(content);
+
             await page.screenshot({ path: `newegg-before-wait-${Date.now()}.png`, fullPage: true });
-            await page.waitForSelector(retailer.priceSelector, { timeout: 10000 });
+            await page.waitForSelector(retailer.priceSelector, { timeout: 20000 });
 
             await page.screenshot({ path: `newegg-after-selector-${Date.now()}.png`, fullPage: true });
             console.log('Price selector found');
