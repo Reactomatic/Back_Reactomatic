@@ -13,12 +13,9 @@ RUN apt-get install -yyq gconf-service lsb-release wget xdg-utils
 
 RUN apt-get install -yyq fonts-liberation
 
-RUN addgroup --system reactomatic && adduser --system --ingroup reactomatic reactomatic
 
 # Specify our working directory, this is in our container/in our image
 WORKDIR /app
-
-RUN chown -R reactomatic:reactomatic /app
 
 # Copy the package.jsons from host to container
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
@@ -30,12 +27,8 @@ RUN npm ci
 # Bundle app source / copy all other files
 COPY . .
 
-RUN chown -R reactomatic:reactomatic /app
-
 # Build the app to the /dist folder
 RUN npm run build
-
-USER reactomatic
 
 EXPOSE 8080
 

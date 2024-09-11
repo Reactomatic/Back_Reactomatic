@@ -160,8 +160,11 @@ export class ComponentsService {
           // Custom logic for Newegg
           if (retailer.name === 'Newegg') {
             console.log(`Searching for ${retailer.name} prices`);
-            console.log("Testing the await function :", await page.waitForSelector(retailer.priceSelector, { timeout: 10000 }))
+
+            await page.screenshot({ path: `newegg-before-wait-${Date.now()}.png`, fullPage: true });
             await page.waitForSelector(retailer.priceSelector, { timeout: 10000 });
+
+            await page.screenshot({ path: `newegg-after-selector-${Date.now()}.png`, fullPage: true });
             console.log('Price selector found');
             const itemActionElement = await page.$(retailer.priceSelector);
             if (itemActionElement) {
@@ -170,6 +173,9 @@ export class ComponentsService {
               if (itemInfoElement) {
 
                 const linkElement = await itemInfoElement.$('a[title="View Details"]');
+
+                await page.screenshot({ path: `newegg-after-link-${Date.now()}.png`, fullPage: true });
+
                 console.log('Found link of the item');
                 const link = await linkElement.evaluate(el => el.href);
 
@@ -216,7 +222,7 @@ export class ComponentsService {
 
   @Cron('0 0 0 * * *')
   async updatePrices(): Promise<void> {
-    const arrayOfIDs = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49];
+    const arrayOfIDs = [1, 3];
     for (const id of arrayOfIDs) {
       const component = await this.findOne(id);
       // Wait for 1 hour (3600000 milliseconds)
