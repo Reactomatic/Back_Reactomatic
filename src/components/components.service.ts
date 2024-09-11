@@ -114,9 +114,9 @@ export class ComponentsService {
       .launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] },);
 
     const retailers = [
-      { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal' },
-      { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal' },
-      { name: 'Newegg', url: `https://www.newegg.com/p/pl?d=${name}`, priceSelector: 'div.item-action', linkSelector: 'a[title="View Details"]' },
+      { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.fr' },
+      { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.de' },
+      { name: 'LDLC', url: `https://www.ldlc.com/recherche/${name}`, priceSelector: 'li.pdt-item div.basket div.price', linkSelector: 'li.pdt-item h3.title-3 a', domain: 'https://www.ldlc.com' },
     ];
 
     const priceByRetailer = [];
@@ -135,64 +135,54 @@ export class ComponentsService {
             await page.waitForSelector(retailer.linkSelector, { timeout: 5000 });
 
             const priceElement = await page.$(retailer.priceSelector);
-            const linkElement: ElementHandle<HTMLAnchorElement> = await page.$('a');
+            const linkElement = await page.$(retailer.linkSelector);
             if (priceElement && linkElement) {
-              const price = await priceElement.evaluate(el => parseFloat(el.textContent.replace(/[^0-9,.]/g, '').replace(',', '.')));
-              const link = await linkElement.evaluate(el => el.href);
+              const price = await priceElement.evaluate(el => {
+                let text = el.textContent.replace(/[^\d,]/g, '');  // Supprime tout sauf les chiffres et les virgules
+                text = text.replace(',', '');  // Enlève la virgule
+                text = text.slice(0, -2) + '.' + text.slice(-2);  // Ajoute un point avant les deux derniers chiffres
+                return parseFloat(text);  // Convertit le texte en nombre flottant
+              });
+              const link = await linkElement.evaluate(el => el.getAttribute('href'));
+              console.log(`Link found: ${link}`);
 
               priceByRetailer.push({
                 retailer: retailer.name,
                 price,
-                url: link,
+                url: `${retailer.domain}${link}`,
               });
               console.log(`Price found for ${retailer.name}: ${price}`);
             }
           }
-
-          // Custom logic for Newegg
-          if (retailer.name === 'Newegg') {
+          if (retailer.name === 'LDLC') {
             console.log(`Searching for ${retailer.name} prices`);
+            await page.waitForSelector(retailer.priceSelector, { timeout: 10000 });
+            await page.waitForSelector(retailer.linkSelector, { timeout: 10000 });
 
-            const content = await page.content();
-            console.log(content);
+            const priceElement = await page.$(retailer.priceSelector);
+            const linkElement = await page.$(retailer.linkSelector);
+            if (priceElement && linkElement) {
 
-            await page.screenshot({ path: `newegg-before-wait-${Date.now()}.png`, fullPage: true });
-            await page.waitForSelector(retailer.priceSelector, { timeout: 20000 });
+              const price = await priceElement.evaluate(el => {
+                let text = el.textContent.replace(/[^\d,]/g, '');  // Supprime tout sauf les chiffres et les virgules
+                text = text.replace(',', '');  // Enlève la virgule
+                text = text.slice(0, -2) + '.' + text.slice(-2);  // Ajoute un point avant les deux derniers chiffres
+                return parseFloat(text);  // Convertit le texte en nombre flottant
+              })
 
-            await page.screenshot({ path: `newegg-after-selector-${Date.now()}.png`, fullPage: true });
-            console.log('Price selector found');
-            const itemActionElement = await page.$(retailer.priceSelector);
-            if (itemActionElement) {
-              console.log('Item action element found');
-              const itemInfoElement = await page.evaluateHandle(el => el.previousElementSibling, itemActionElement);
-              if (itemInfoElement) {
+            const link = await linkElement.evaluate(el => el.getAttribute('href'));
+              console.log(link)
 
-                const linkElement = await itemInfoElement.$('a[title="View Details"]');
-
-                await page.screenshot({ path: `newegg-after-link-${Date.now()}.png`, fullPage: true });
-
-                console.log('Found link of the item');
-                const link = await linkElement.evaluate(el => el.href);
-
-                let price;
-                const priceCurrentElement = await itemActionElement.$('li.price-current');
-                if (priceCurrentElement) {
-                  const integerPartElement = await priceCurrentElement.$('strong');
-                  const decimalPartElement = await priceCurrentElement.$('sup');
-                  const integerPart = await integerPartElement.evaluate(el => el.textContent.replace(',', ''));
-                  const decimalPart = await decimalPartElement.evaluate(el => el.textContent);
-                  price = parseFloat(`${integerPart}.${decimalPart}`);
-                }
-
-                priceByRetailer.push({
-                  retailer: retailer.name,
-                  price,
-                  url: link,
-                });
-                console.log(`Price found for ${retailer.name}: ${price}`);
-              }
+              priceByRetailer.push({
+                retailer: retailer.name,
+                price,
+                url: `${retailer.domain}${link}`,
+              });
+              console.log(`Price found for ${retailer.name}: ${price}`);
             }
+
           }
+
         } catch (error) {
           this.logger.error(`Error searching prices for ${retailer.name}: ${error.message}`);
         }
