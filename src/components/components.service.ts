@@ -72,16 +72,6 @@ export class ComponentsService {
     }
   }
 
-  async findByName(name: string): Promise<Component[]> {
-    try {
-      return await this.componentsRepository.find({ where: { name } });
-    } catch (error) {
-      this.logger.error(`Error finding components by name ${name}: ${error.message}`, error.stack);
-      throw new InternalServerErrorException('Failed to retrieve components by name');
-    }
-  }
-
-
   async update(id: number, updateComponentDto: UpdateComponentDto): Promise<Component> {
     try {
       const result = await this.componentsRepository.update(id, updateComponentDto);
@@ -134,6 +124,8 @@ export class ComponentsService {
     try {
       for (const retailer of retailers) {
         const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+
         await page.goto(retailer.url, { waitUntil: 'domcontentloaded' });
 
         try {

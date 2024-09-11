@@ -29,17 +29,12 @@ export class ComponentsController {
     return this.componentsService.findByCategory(category);
   }
 
-  @Get('search')
-  findByName(@Query('name') name: string) {
-    if (!name) {
-      throw new BadRequestException('Le paramètre de recherche "name" est requis');
-    }
-    return this.componentsService.findByName(name);
-  }
 
   @Post(':id/search')
   searchPriceByName(@Param('id') id: string, @Body() name: string) {
-    return this.componentsService.searchPricesByName(+id, name);
+    //return this.componentsService.searchPricesByName(+id, name);
+    return this.componentsService.updatePrices();
+
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
