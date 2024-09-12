@@ -15,10 +15,10 @@ dotenv.config();
 @Module({
   imports: [AuthModule,
     ConfigModule.forRoot(
-      z{
-      isGlobal: true,
-      envFilePath: '.env',
-    }
+      {
+        isGlobal: true,
+        envFilePath: '.env',
+      }
     ), TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
