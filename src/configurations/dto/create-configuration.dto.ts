@@ -1,1 +1,4 @@
-export class CreateConfigurationDto {}
+export class CreateConfigurationDto {
+    name: string;
+    componentIds: any[];
+}

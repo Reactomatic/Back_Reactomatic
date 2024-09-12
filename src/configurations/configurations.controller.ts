@@ -1,28 +1,64 @@
-import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Req, Put } from '@nestjs/common';
 import { ConfigurationService } from './configurations.service';
-import { Configuration } from './entities/configuration.entity';
+import { CreateConfigurationDto } from './dto/create-configuration.dto';
+import { Request } from 'express';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from 'src/guards/roles.guard';
+import { AuthenticatedRequest } from '../auth/authenticatedrequest';
+import { Roles } from 'src/decorators/roles.decorator';
+import { UserRole } from 'src/users/entities/user.entity';
 
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('configurations')
 export class ConfigurationController {
   constructor(private readonly configurationService: ConfigurationService) {}
 
   @Post()
-  create(@Body() body: { name: string; componentIds: number[] }): Promise<Configuration> {
-    return this.configurationService.create(body.name, body.componentIds);
+  async create(@Body() createConfigurationDto: CreateConfigurationDto, @Req() req: AuthenticatedRequest) {
+    const userId = req.user.userId;
+    return await this.configurationService.create(createConfigurationDto, userId);
   }
 
   @Get()
-  findAll(): Promise<Configuration[]> {
-    return this.configurationService.findAll();
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  async findAll() {
+    return await this.configurationService.findAll();
+  }
+
+  @Get('by-user/:userId')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  async findConfigurationByUser(@Param('userId') userId: number) {
+    return await this.configurationService.findConfigurationByUserId(userId);
+  }
+
+  @Get('me')
+  async findMyConfiguration(@Req() req: AuthenticatedRequest) {
+    const userId = req.user.userId;
+    return await this.configurationService.findMyConfiguration(userId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: number): Promise<Configuration> {
-    return this.configurationService.findOne(id);
+  async findOne(@Param('id') id: number) {
+    return await this.configurationService.findOne(id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string): Promise<void> {
-    return this.configurationService.remove(id);
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  async delete(@Param('id') id: number) {
+    return await this.configurationService.delete(id);
   }
+
+  @Put('me/:id')
+  async updateMyConfiguration(@Param('id') id: number, @Body() updateConfigurationDto: CreateConfigurationDto, @Req() req: AuthenticatedRequest) {
+    const userId = req.user.userId;
+    return await this.configurationService.updateMyConfiguration(userId, id, updateConfigurationDto);
+  }
+
+  @Delete('me/:id')
+  async deleteMyConfiguration(@Param('id') id: number, @Req() req: AuthenticatedRequest) {
+    const userId = req.user.userId;
+    return await this.configurationService.deleteMyConfiguration(userId, id);
+  }
+
+
 }
