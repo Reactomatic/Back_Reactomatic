@@ -105,7 +105,7 @@ export class ComponentsService {
     }
   }
 
-  async searchPricesByName(id: number, name: string): Promise<{ priceByRetailer: any[] }> {
+  async searchPricesByName(id: number, name: string): Promise<{ mergedPriceByRetailer: any[] }> {
     const component = await this.findOne(id);
     console.log(`Searching prices for ${name}`);
 
@@ -114,13 +114,16 @@ export class ComponentsService {
       .use(StealthPlugin())
       .launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--incognito'] },);
 
+    const existingPriceByRetailer = component.priceByRetailer || []; // Get existing data
+
     const retailers = [
       { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.fr' },
       { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.de' },
       { name: 'LDLC', url: `https://www.ldlc.com/recherche/${name}`, priceSelector: 'li.pdt-item div.basket div.price', linkSelector: 'li.pdt-item h3.title-3 a', domain: 'https://www.ldlc.com' },
+      { name: 'Cybertek', url: `https://www.cybertek.fr/boutique/produit.aspx?q=${name}`, priceSelector: 'div.grb__liste-produit__liste__produit__achat__prix ', linkSelector: 'a.prod_txt_left', domain: 'https://www.cybertek.fr' },
     ];
 
-    const priceByRetailer = [];
+    const newPriceByRetailer = [];
 
     try {
       for (const retailer of retailers) {
@@ -164,7 +167,7 @@ export class ComponentsService {
                 const link = await linkElement.evaluate(el => el.getAttribute('href'));
                 console.log(`Link found: ${link}`);
 
-                priceByRetailer.push({
+                newPriceByRetailer.push({
                   retailer: retailer.name,
                   price,
                   url: `${retailer.domain}${link}`,
@@ -193,7 +196,7 @@ export class ComponentsService {
               const link = await linkElement.evaluate(el => el.getAttribute('href'));
               console.log(link)
 
-              priceByRetailer.push({
+              newPriceByRetailer.push({
                 retailer: retailer.name,
                 price,
                 url: `${retailer.domain}${link}`,
@@ -201,6 +204,33 @@ export class ComponentsService {
               console.log(`Price found for ${retailer.name}: ${price}`);
             }
 
+          }
+          if (retailer.name === 'Cybertek') {
+            console.log(`Searching for ${retailer.name} prices`);
+            await page.waitForSelector(retailer.priceSelector, { timeout: 10000 });
+            await page.waitForSelector(retailer.linkSelector, { timeout: 10000 });
+
+            const priceElement = await page.$(retailer.priceSelector);
+            const linkElement = await page.$(retailer.linkSelector);
+            if (priceElement && linkElement) {
+
+              const price = await priceElement.evaluate(el => {
+                let text = el.textContent.replace(/[^\d,]/g, '');  // Supprime tout sauf les chiffres et les virgules
+                text = text.replace(',', '');  // Enlève la virgule
+                text = text.slice(0, -2) + '.' + text.slice(-2);  // Ajoute un point avant les deux derniers chiffres
+                return parseFloat(text);  // Convertit le texte en nombre flottant
+              })
+
+              const link = await linkElement.evaluate(el => el.getAttribute('href'));
+              console.log(link)
+
+              newPriceByRetailer.push({
+                retailer: retailer.name,
+                price,
+                url: `${link}`,
+              });
+              console.log(`Price found for ${retailer.name}: ${price}`);
+            }
           }
         } catch (error) {
           this.logger.error(`Error searching prices for ${retailer.name}: ${error.message}`);
@@ -214,14 +244,32 @@ export class ComponentsService {
       await browser.close();
     }
 
-    if (priceByRetailer.length > 0) {
-      const minPriceRetailer = priceByRetailer.reduce((prev, curr) => curr.price < prev.price ? curr : prev);
-      component.price = minPriceRetailer.price;
-      component.priceByRetailer = priceByRetailer;
+    const mergedPriceByRetailer = retailers.map(retailer => {
+      const newEntry = newPriceByRetailer.find(entry => entry.retailer === retailer.name);
+      const oldEntry = existingPriceByRetailer.find(entry => entry.retailer === retailer.name);
+      return newEntry || oldEntry;
+    }).filter(Boolean);
+
+    if (mergedPriceByRetailer.length > 0) {
+      component.priceByRetailer = mergedPriceByRetailer;
       await this.componentsRepository.save(component);
     }
 
-    return { priceByRetailer };
+    /*         // Check if prices were found for each retailer
+        if (priceByRetailer.length === retailers.length) {
+          console.log('All prices and links were found for all retailers');
+        } else {
+          console.log('Some prices or links were missing');
+        }
+    
+        if (priceByRetailer.length > 0) {
+          const minPriceRetailer = priceByRetailer.reduce((prev, curr) => curr.price < prev.price ? curr : prev);
+          component.price = minPriceRetailer.price;
+          component.priceByRetailer = priceByRetailer;
+          await this.componentsRepository.save(component);
+        } */
+
+    return { mergedPriceByRetailer };
   }
 
   @Cron('0 0 0 * * *')
@@ -237,5 +285,7 @@ export class ComponentsService {
       //change for 1 minutes
       await new Promise(resolve => setTimeout(resolve, 60000));
     }
+    console.log('All prices updated');
+    return null;
   }
 }
