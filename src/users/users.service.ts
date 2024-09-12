@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,63 +13,83 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  //Admin can get all users
-  findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+  async findAll(): Promise<User[]> {
+    try {
+      return await this.usersRepository.find();
+    } catch (error) {
+      throw new InternalServerErrorException(`Error finding all users: ${error.message}`);
+    }
   }
 
-  //Admin can get a user by id
-  findOne(id: number): Promise<User | null> {
-    return this.usersRepository.findOneBy({ id });
+  async findOne(id: number): Promise<User | null> {
+    try {
+      return await this.usersRepository.findOne({ where: { id } });
+    } catch (error) {
+      throw new InternalServerErrorException(`Error finding user with ID ${id}: ${error.message}`);
+    }
   }
 
-  //Admin can get a user by email
-  findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+  async findByEmail(email: string): Promise<User | null> {
+    try {
+      return await this.usersRepository.findOne({ where: { email } });
+    } catch (error) {
+      throw new InternalServerErrorException(`Error finding user with email ${email}: ${error.message}`);
+    }
   }
 
-  //Admin can delete a user
   async remove(id: number): Promise<void> {
-    await this.usersRepository.delete(id);
+    try {
+      await this.usersRepository.delete(id);
+    } catch (error) {
+      throw new InternalServerErrorException(`Error removing user with ID ${id}: ${error.message}`);
+    }
   }
 
-  //User can create an account
   async create(userDto: CreateUserDto): Promise<User> {
-    const user = this.usersRepository.create(userDto);
-    return this.usersRepository.save(user);
+    try {
+      const user = this.usersRepository.create(userDto);
+      return await this.usersRepository.save(user);
+    } catch (error) {
+      throw new InternalServerErrorException(`Error creating user: ${error.message}`);
+    }
   }
 
-  //User can update their account
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.usersRepository.findOneBy({ id });
+    try {
+      const user = await this.usersRepository.findOne({ where: { id } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      user.firstName = updateUserDto.firstName;
+      user.lastName = updateUserDto.lastName;
+      user.email = updateUserDto.email;
+      if (updateUserDto.password) {
+        user.password = await argon2.hash(updateUserDto.password);
+      }
+      user.role = updateUserDto.role;
 
-    if (!user) {
-      throw new Error('User not found');
+      return this.usersRepository.save(user);
+    } catch (error) {
+      throw new InternalServerErrorException(`Error updating user with ID ${id}: ${error.message}`);
     }
-    user.firstName = updateUserDto.firstName;
-    user.lastName = updateUserDto.lastName;
-    user.email = updateUserDto.email;
-    if (updateUserDto.password) {
-      user.password = await argon2.hash(updateUserDto.password);
-    }
-
-    user.role = updateUserDto.role;
-    return this.usersRepository.save(user);
   }
 
   async updateProfile(userId: string, updateProfileDto: UpdateUserDto): Promise<User> {
-    const user = await this.usersRepository.findOneBy({ id: Number(userId) });
+    try {
+      const user = await this.usersRepository.findOne({ where: { id: Number(userId) } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      user.firstName = updateProfileDto.firstName;
+      user.lastName = updateProfileDto.lastName;
+      user.email = updateProfileDto.email;
+      if (updateProfileDto.password) {
+        user.password = await argon2.hash(updateProfileDto.password);
+      }
 
-    if (!user) {
-      throw new Error('User not found');
+      return this.usersRepository.save(user);
+    } catch (error) {
+      throw new InternalServerErrorException(`Error updating profile for user with ID ${userId}: ${error.message}`);
     }
-    user.firstName = updateProfileDto.firstName;
-    user.lastName = updateProfileDto.lastName;
-    user.email = updateProfileDto.email;
-    if (updateProfileDto.password) {
-      user.password = await argon2.hash(updateProfileDto.password);
-    }
-
-    return this.usersRepository.save(user);
   }
 }

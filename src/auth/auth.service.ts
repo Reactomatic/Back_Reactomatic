@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -12,38 +12,38 @@ export class AuthService {
   ) { }
 
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) {
-      return null;
-    }
-
-    const passwordMatch = await argon2.verify(user.password, pass).catch(e => {
-      return false;
-    });
-
-    if (passwordMatch) {
-      const { password, ...result } = user;
-      return result;
-    } else {
-      throw new UnauthorizedException('Invalid credentials');
+    try {
+      const user = await this.usersService.findByEmail(email);
+      if (!user) {
+        return null;
+      }
+      const passwordMatch = await argon2.verify(user.password, pass);
+      if (passwordMatch) {
+        const { password, ...result } = user;
+        return result;
+      } else {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(`Error validating user: ${error.message}`);
     }
   }
 
   async login(email: string, password: string) {
-    const user = await this.validateUser(email, password);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+    try {
+      const user = await this.validateUser(email, password);
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      const payload = { email: user.email, sub: user.id, role: user.role };
+      return { access_token: this.jwtService.sign(payload), user };
+    } catch (error) {
+      throw new InternalServerErrorException(`Error during login: ${error.message}`);
     }
-
-    const payload = { email: user.email, sub: user.id, role: user.role };
-
-    return {
-      access_token: this.jwtService.sign(payload),
-      user,
-    };
   }
 
   async register(createUserDto: CreateUserDto) {
+    try {
     const userExists = await this.usersService.findByEmail(createUserDto.email);
     if (userExists) {
       throw new UnauthorizedException('User already exists');
@@ -51,38 +51,48 @@ export class AuthService {
 
     const hashedPassword = await argon2.hash(createUserDto.password);
     createUserDto.password = hashedPassword;
+
     const user = await this.usersService.create(createUserDto);
     const token = this.jwtService.sign({ email: user.email, sub: user.id, role: user.role });
     return {user, access_token: token}
+  } catch (error) {
+    throw new InternalServerErrorException(`Error registering user: ${error.message}`);
   }
-  
+}
+
 
   async forgotPassword(email: string): Promise<void> {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) {
-      throw new NotFoundException('User not found');
+    try {
+      const user = await this.usersService.findByEmail(email);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      const resetToken = this.jwtService.sign({ email: user.email }, { expiresIn: '1h' });
+      // send resetToken via email or any other appropriate method
+    } catch (error) {
+      throw new InternalServerErrorException(`Error during password reset: ${error.message}`);
     }
-
-    const resetToken = this.jwtService.sign({ email: user.email }, { expiresIn: '1h' });
   }
 
   async validateOAuthLogin(profile: any) {
-    const email = profile.email;
-    let user = await this.usersService.findByEmail(email);
+    try {
+      const email = profile.email;
+      let user = await this.usersService.findByEmail(email);
 
-    if (!user) {
-      const createUserDto = new CreateUserDto();
-      createUserDto.email = email;
-      createUserDto.firstName = profile.firstName;
-      createUserDto.lastName = profile.lastName;
-      createUserDto.picture = profile.picture;
-      createUserDto.password = '';
-      user = await this.usersService.create(createUserDto);
+      if (!user) {
+        const createUserDto = new CreateUserDto();
+        createUserDto.email = email;
+        createUserDto.firstName = profile.firstName;
+        createUserDto.lastName = profile.lastName;
+        createUserDto.picture = profile.picture;
+        createUserDto.password = '';
+        user = await this.usersService.create(createUserDto);
+      }
+
+      const payload = { email: user.email, sub: user.id };
+      return { access_token: this.jwtService.sign(payload) };
+    } catch (error) {
+      throw new InternalServerErrorException(`Error validating OAuth login: ${error.message}`);
     }
-
-    const payload = { email: user.email, sub: user.id };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
   }
 }
