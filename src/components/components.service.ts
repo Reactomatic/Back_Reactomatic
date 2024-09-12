@@ -105,7 +105,7 @@ export class ComponentsService {
     }
   }
 
-  async searchPricesByName(id: number, name: string): Promise<{ priceByRetailer: any[] }> {
+  async searchPricesByName(id: number, name: string): Promise<{ mergedPriceByRetailer: any[] }> {
     const component = await this.findOne(id);
     console.log(`Searching prices for ${name}`);
 
@@ -114,6 +114,8 @@ export class ComponentsService {
       .use(StealthPlugin())
       .launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--incognito'] },);
 
+    const existingPriceByRetailer = component.priceByRetailer || []; // Get existing data
+
     const retailers = [
       { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.fr' },
       { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.de' },
@@ -121,7 +123,7 @@ export class ComponentsService {
       { name: 'Cybertek', url: `https://www.cybertek.fr/boutique/produit.aspx?q=${name}`, priceSelector: 'div.grb__liste-produit__liste__produit__achat__prix ', linkSelector: 'a.prod_txt_left', domain: 'https://www.cybertek.fr' },
     ];
 
-    const priceByRetailer = [];
+    const newPriceByRetailer = [];
 
     try {
       for (const retailer of retailers) {
@@ -165,7 +167,7 @@ export class ComponentsService {
                 const link = await linkElement.evaluate(el => el.getAttribute('href'));
                 console.log(`Link found: ${link}`);
 
-                priceByRetailer.push({
+                newPriceByRetailer.push({
                   retailer: retailer.name,
                   price,
                   url: `${retailer.domain}${link}`,
@@ -194,7 +196,7 @@ export class ComponentsService {
               const link = await linkElement.evaluate(el => el.getAttribute('href'));
               console.log(link)
 
-              priceByRetailer.push({
+              newPriceByRetailer.push({
                 retailer: retailer.name,
                 price,
                 url: `${retailer.domain}${link}`,
@@ -222,7 +224,7 @@ export class ComponentsService {
               const link = await linkElement.evaluate(el => el.getAttribute('href'));
               console.log(link)
 
-              priceByRetailer.push({
+              newPriceByRetailer.push({
                 retailer: retailer.name,
                 price,
                 url: `${link}`,
@@ -242,20 +244,37 @@ export class ComponentsService {
       await browser.close();
     }
 
-    if (priceByRetailer.length > 0) {
-      const minPriceRetailer = priceByRetailer.reduce((prev, curr) => curr.price < prev.price ? curr : prev);
-      component.price = minPriceRetailer.price;
-      component.priceByRetailer = priceByRetailer;
+    const mergedPriceByRetailer = retailers.map(retailer => {
+      const newEntry = newPriceByRetailer.find(entry => entry.retailer === retailer.name);
+      const oldEntry = existingPriceByRetailer.find(entry => entry.retailer === retailer.name);
+      return newEntry || oldEntry;
+    }).filter(Boolean);
+
+    if (mergedPriceByRetailer.length > 0) {
+      component.priceByRetailer = mergedPriceByRetailer;
       await this.componentsRepository.save(component);
     }
 
-    return { priceByRetailer };
+    /*         // Check if prices were found for each retailer
+        if (priceByRetailer.length === retailers.length) {
+          console.log('All prices and links were found for all retailers');
+        } else {
+          console.log('Some prices or links were missing');
+        }
+    
+        if (priceByRetailer.length > 0) {
+          const minPriceRetailer = priceByRetailer.reduce((prev, curr) => curr.price < prev.price ? curr : prev);
+          component.price = minPriceRetailer.price;
+          component.priceByRetailer = priceByRetailer;
+          await this.componentsRepository.save(component);
+        } */
+
+    return { mergedPriceByRetailer };
   }
 
   @Cron('0 0 0 * * *')
   async updatePrices(): Promise<void> {
-    //const arrayOfIDs = [1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61];
-    const arrayOfIDs = [1];
+    const arrayOfIDs = [1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61];
     for (const id of arrayOfIDs) {
       const component = await this.findOne(id);
       console.log(`Updating prices for ${component.name}`);
@@ -266,5 +285,7 @@ export class ComponentsService {
       //change for 1 minutes
       await new Promise(resolve => setTimeout(resolve, 60000));
     }
+    console.log('All prices updated');
+    return null;
   }
 }
