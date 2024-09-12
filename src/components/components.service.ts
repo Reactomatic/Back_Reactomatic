@@ -135,24 +135,43 @@ export class ComponentsService {
             await page.waitForSelector(retailer.priceSelector, { timeout: 5000 });
             await page.waitForSelector(retailer.linkSelector, { timeout: 5000 });
 
-            const priceElement = await page.$(retailer.priceSelector);
-            const linkElement = await page.$(retailer.linkSelector);
-            if (priceElement && linkElement) {
-              const price = await priceElement.evaluate(el => {
-                let text = el.textContent.replace(/[^\d,]/g, '');  // Supprime tout sauf les chiffres et les virgules
-                text = text.replace(',', '');  // Enlève la virgule
-                text = text.slice(0, -2) + '.' + text.slice(-2);  // Ajoute un point avant les deux derniers chiffres
-                return parseFloat(text);  // Convertit le texte en nombre flottant
-              });
-              const link = await linkElement.evaluate(el => el.getAttribute('href'));
-              console.log(`Link found: ${link}`);
+            // Fetch all result items to loop through them and filter out irrelevant content
+            const productElements = await page.$$('.s-result-item');
 
-              priceByRetailer.push({
-                retailer: retailer.name,
-                price,
-                url: `${retailer.domain}${link}`,
-              });
-              console.log(`Price found for ${retailer.name}: ${price}`);
+            for (const productElement of productElements) {
+
+              const sponsorLabel = await productElement.$('.a-color-base');
+              const isSponsored = sponsorLabel && (await page.evaluate(el => (el as HTMLElement).innerText.includes('Sponsorisé'), sponsorLabel));
+
+              if (isSponsored) {
+                const wrongLink = await productElement.$eval('a.a-link-normal', el => el.href);  // Get the link of the sponsored item
+                console.log(`Skipping sponsored item with link: ${wrongLink}`);
+                continue;  // Skip the sponsored item
+              }
+
+              // Also check if the item actually contains a price (to skip ads or irrelevant items)
+              const priceElement = await productElement.$(retailer.priceSelector);
+              const linkElement = await productElement.$(retailer.linkSelector);
+
+              if (!isSponsored && priceElement && linkElement) {
+                const price = await priceElement.evaluate(el => {
+                  let text = el.textContent.replace(/[^\d,]/g, '');  // Supprime tout sauf les chiffres et les virgules
+                  text = text.replace(',', '');  // Enlève la virgule
+                  text = text.slice(0, -2) + '.' + text.slice(-2);  // Ajoute un point avant les deux derniers chiffres
+                  return parseFloat(text);  // Convertit le texte en nombre flottant
+                });
+
+                const link = await linkElement.evaluate(el => el.getAttribute('href'));
+                console.log(`Link found: ${link}`);
+
+                priceByRetailer.push({
+                  retailer: retailer.name,
+                  price,
+                  url: `${retailer.domain}${link}`,
+                });
+                console.log(`Price found for ${retailer.name}: ${price}`);
+                break;  // Stop the loop after finding the first price
+              }
             }
           }
           if (retailer.name === 'LDLC') {
