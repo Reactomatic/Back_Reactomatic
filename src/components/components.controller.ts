@@ -11,11 +11,12 @@ import { SearchPriceDto } from './dto/search-price.dto';
 
 @Controller('components')
 export class ComponentsController {
-  constructor(private readonly componentsService: ComponentsService) {}
+  constructor(private readonly componentsService: ComponentsService) { }
 
   @Get()
   findAll() {
     return this.componentsService.findAll();
+    //return this.componentsService.updatePrices();
   }
 
   @Get(':id')
@@ -28,9 +29,12 @@ export class ComponentsController {
     return this.componentsService.findByCategory(category);
   }
 
+  
+
   @Post(':id/search')
-  searchPriceByName(@Param('id') id: string, @Body() searchPriceDto: SearchPriceDto) {
-    return this.componentsService.searchPricesByName(+id, searchPriceDto);
+  searchPriceByName(@Param('id') id: string, @Body() name: string) {
+    //return this.componentsService.searchPricesByName(+id, name);
+    return this.componentsService.updatePrices();
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)

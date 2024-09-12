@@ -3,14 +3,13 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import * as argon2 from 'argon2';
-import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async validateUser(email: string, pass: string): Promise<any> {
     try {
@@ -37,7 +36,7 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
       const payload = { email: user.email, sub: user.id, role: user.role };
-      return { access_token: this.jwtService.sign(payload) };
+      return { access_token: this.jwtService.sign(payload), user };
     } catch (error) {
       throw new InternalServerErrorException(`Error during login: ${error.message}`);
     }
@@ -45,17 +44,22 @@ export class AuthService {
 
   async register(createUserDto: CreateUserDto) {
     try {
-      const userExists = await this.usersService.findByEmail(createUserDto.email);
-      if (userExists) {
-        throw new UnauthorizedException('User already exists');
-      }
-      const hashedPassword = await argon2.hash(createUserDto.password);
-      createUserDto.password = hashedPassword;
-      return this.usersService.create(createUserDto);
-    } catch (error) {
-      throw new InternalServerErrorException(`Error during user registration: ${error.message}`);
+    const userExists = await this.usersService.findByEmail(createUserDto.email);
+    if (userExists) {
+      throw new UnauthorizedException('User already exists');
     }
+
+    const hashedPassword = await argon2.hash(createUserDto.password);
+    createUserDto.password = hashedPassword;
+
+    const user = await this.usersService.create(createUserDto);
+    const token = this.jwtService.sign({ email: user.email, sub: user.id, role: user.role });
+    return {user, access_token: token}
+  } catch (error) {
+    throw new InternalServerErrorException(`Error registering user: ${error.message}`);
   }
+}
+
 
   async forgotPassword(email: string): Promise<void> {
     try {
@@ -74,7 +78,7 @@ export class AuthService {
     try {
       const email = profile.email;
       let user = await this.usersService.findByEmail(email);
-    
+
       if (!user) {
         const createUserDto = new CreateUserDto();
         createUserDto.email = email;
@@ -84,7 +88,7 @@ export class AuthService {
         createUserDto.password = '';
         user = await this.usersService.create(createUserDto);
       }
-    
+
       const payload = { email: user.email, sub: user.id };
       return { access_token: this.jwtService.sign(payload) };
     } catch (error) {

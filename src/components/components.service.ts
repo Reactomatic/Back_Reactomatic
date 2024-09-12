@@ -6,7 +6,15 @@ import { Repository } from 'typeorm';
 import { Component } from './entities/component.entity';
 import { ComponentType } from 'src/enum/componentsType';
 import { SearchPriceDto } from './dto/search-price.dto';
-import * as puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+
+
+import { ElementHandle } from 'puppeteer'; // Import ElementHandle from puppeteer types
+
+import { Cron } from '@nestjs/schedule';
+
+//puppeteer.use(StealthPlugin());
 
 
 @Injectable()
@@ -20,125 +28,162 @@ export class ComponentsService {
   ) { }
 
   async create(createComponentDto: CreateComponentDto): Promise<Component> {
-    const component = this.componentsRepository.create(createComponentDto);
-    return await this.componentsRepository.save(component);
+    try {
+      const component = this.componentsRepository.create(createComponentDto);
+      return await this.componentsRepository.save(component);
+    } catch (error) {
+      this.logger.error(`Error creating component: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to create component');
+    }
   }
+
 
   async findAll(): Promise<Component[]> {
-    return await this.componentsRepository.find();
+    try {
+      return await this.componentsRepository.find();
+    } catch (error) {
+      this.logger.error(`Error finding all components: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to retrieve components');
+    }
   }
 
+
   async findOne(id: number): Promise<Component> {
-    const component = await this.componentsRepository.findOne({ where: { id } });
-    if (!component) {
-      throw new NotFoundException(`Component with ID ${id} not found`);
+    try {
+      const component = await this.componentsRepository.findOne({ where: { id } });
+      if (!component) {
+        throw new NotFoundException(`Component with ID ${id} not found`);
+      }
+      return component;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error finding component with ID ${id}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to retrieve component');
     }
-    return component;
   }
 
   async findByCategory(category: ComponentType): Promise<Component[]> {
-    return await this.componentsRepository.find({ where: { category } });
+    try {
+      return await this.componentsRepository.find({ where: { category } });
+    } catch (error) {
+      this.logger.error(`Error finding components by category ${category}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to retrieve components by category');
+    }
   }
 
   async update(id: number, updateComponentDto: UpdateComponentDto): Promise<Component> {
-    await this.componentsRepository.update(id, updateComponentDto);
-    const updatedComponent = await this.componentsRepository.findOne({ where: { id } });
-    if (!updatedComponent) {
-      throw new NotFoundException(`Component with ID ${id} not found`);
+    try {
+      const result = await this.componentsRepository.update(id, updateComponentDto);
+      if (result.affected === 0) {
+        throw new NotFoundException(`Component with ID ${id} not found`);
+      }
+      return await this.findOne(id);  // Re-use findOne to get the updated component
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error updating component with ID ${id}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to update component');
     }
-    return updatedComponent;
   }
+
 
   async remove(id: number): Promise<void> {
-    const result = await this.componentsRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Component with ID ${id} not found`);
+    try {
+      const result = await this.componentsRepository.delete(id);
+      if (result.affected === 0) {
+        throw new NotFoundException(`Component with ID ${id} not found`);
+      }
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error removing component with ID ${id}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to remove component');
     }
   }
 
-  async searchPricesByName(id: number, searchPriceDto: SearchPriceDto): Promise<{ priceByRetailer: any[] }> {
-    const { name } = searchPriceDto;
-    const { brand } = searchPriceDto;
+  async searchPricesByName(id: number, name: string): Promise<{ priceByRetailer: any[] }> {
     const component = await this.findOne(id);
-    const browser = await puppeteer.launch({ headless: true });
+    console.log(`Searching prices for ${name}`);
+
+    // Launch Puppeteer using puppeteer-extra with stealth
+    const browser = await puppeteer
+      .use(StealthPlugin())
+      .launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--incognito'] },);
+
     const retailers = [
-      { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}+${brand}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal' },
-      { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}+${brand}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal' },
-      { name: 'Newegg', url: `https://www.newegg.com/p/pl?d=${name}+${brand}`, priceSelector: 'div.item-action', linkSelector: 'a[title="View Details"]' }, // Updated selector for Newegg
+      { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.fr' },
+      { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.de' },
+      { name: 'LDLC', url: `https://www.ldlc.com/recherche/${name}`, priceSelector: 'li.pdt-item div.basket div.price', linkSelector: 'li.pdt-item h3.title-3 a', domain: 'https://www.ldlc.com' },
     ];
+
     const priceByRetailer = [];
 
     try {
       for (const retailer of retailers) {
         const page = await browser.newPage();
+
+
         await page.goto(retailer.url, { waitUntil: 'domcontentloaded' });
 
         try {
-          // Logic for Amazon FR and Amazon DE remains unchanged
           if (retailer.name === 'Amazon FR' || retailer.name === 'Amazon DE') {
+            console.log(`Searching for ${retailer.name} prices`);
             await page.waitForSelector(retailer.priceSelector, { timeout: 5000 });
             await page.waitForSelector(retailer.linkSelector, { timeout: 5000 });
 
             const priceElement = await page.$(retailer.priceSelector);
-            const linkElement = await page.$(retailer.linkSelector) as puppeteer.ElementHandle<HTMLAnchorElement>;
-
+            const linkElement = await page.$(retailer.linkSelector);
             if (priceElement && linkElement) {
-              const price = await priceElement.evaluate(el => parseFloat(el.textContent.replace(/[^0-9,.]/g, '').replace(',', '.')));
-              const link = await linkElement.evaluate(el => el.href);
+              const price = await priceElement.evaluate(el => {
+                let text = el.textContent.replace(/[^\d,]/g, '');  // Supprime tout sauf les chiffres et les virgules
+                text = text.replace(',', '');  // Enlève la virgule
+                text = text.slice(0, -2) + '.' + text.slice(-2);  // Ajoute un point avant les deux derniers chiffres
+                return parseFloat(text);  // Convertit le texte en nombre flottant
+              });
+              const link = await linkElement.evaluate(el => el.getAttribute('href'));
+              console.log(`Link found: ${link}`);
 
               priceByRetailer.push({
                 retailer: retailer.name,
                 price,
-                url: link,
+                url: `${retailer.domain}${link}`,
               });
+              console.log(`Price found for ${retailer.name}: ${price}`);
             }
           }
+          if (retailer.name === 'LDLC') {
+            console.log(`Searching for ${retailer.name} prices`);
+            await page.waitForSelector(retailer.priceSelector, { timeout: 10000 });
+            await page.waitForSelector(retailer.linkSelector, { timeout: 10000 });
 
-          // Custom logic for Newegg
-          if (retailer.name === 'Newegg') {
-            // Wait for the 'div.item-action' selector and link selector to appear
-            await page.waitForSelector(retailer.priceSelector, { timeout: 5000 });
+            const priceElement = await page.$(retailer.priceSelector);
+            const linkElement = await page.$(retailer.linkSelector);
+            if (priceElement && linkElement) {
 
-            // Get the first 'div.item-action' element
-            const itemActionElement = await page.$(retailer.priceSelector); // Select first div.item-action
+              const price = await priceElement.evaluate(el => {
+                let text = el.textContent.replace(/[^\d,]/g, '');  // Supprime tout sauf les chiffres et les virgules
+                text = text.replace(',', '');  // Enlève la virgule
+                text = text.slice(0, -2) + '.' + text.slice(-2);  // Ajoute un point avant les deux derniers chiffres
+                return parseFloat(text);  // Convertit le texte en nombre flottant
+              })
 
-            if (itemActionElement) {
-              // Get the sibling 'div.item-info'
-              const itemInfoElement = await page.evaluateHandle(el => el.previousElementSibling, itemActionElement);
+              const link = await linkElement.evaluate(el => el.getAttribute('href'));
+              console.log(link)
 
-              if (itemInfoElement) {
-                // Get the link within 'div.item-info' with the title "View Details"
-                const linkElement = await itemInfoElement.$('a[title="View Details"]');
-                const link = await linkElement.evaluate(el => el.href);
-
-                let price;
-                const priceCurrentElement = await itemActionElement.$('li.price-current');
-                if (priceCurrentElement) {
-                  const integerPartElement = await priceCurrentElement.$('strong');
-                  const decimalPartElement = await priceCurrentElement.$('sup');
-                  const integerPart = await integerPartElement.evaluate(el => el.textContent.replace(',', ''));
-                  const decimalPart = await decimalPartElement.evaluate(el => el.textContent);
-                  price = parseFloat(`${integerPart}.${decimalPart}`);
-                }
-
-                // Push the price and URL for Newegg
-                priceByRetailer.push({
-                  retailer: retailer.name,
-                  price,
-                  url: link,
-                });
-
-                // Exit the loop after processing the first match for Newegg
-                break;
-              } else {
-                console.log('No matching div.item-info found for the first div.item-action');
-              }
-            } else {
-              console.log('Item action element not found');
+              priceByRetailer.push({
+                retailer: retailer.name,
+                price,
+                url: `${retailer.domain}${link}`,
+              });
+              console.log(`Price found for ${retailer.name}: ${price}`);
             }
+
           }
         } catch (error) {
-          // Log specific errors for each retailer
           this.logger.error(`Error searching prices for ${retailer.name}: ${error.message}`);
         }
 
@@ -151,15 +196,27 @@ export class ComponentsService {
     }
 
     if (priceByRetailer.length > 0) {
-      // Find the lowest price
       const minPriceRetailer = priceByRetailer.reduce((prev, curr) => curr.price < prev.price ? curr : prev);
-
-      // Update component with the lowest price
       component.price = minPriceRetailer.price;
       component.priceByRetailer = priceByRetailer;
       await this.componentsRepository.save(component);
     }
 
     return { priceByRetailer };
+  }
+
+  @Cron('0 0 0 * * *')
+  async updatePrices(): Promise<void> {
+    const arrayOfIDs = [1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61];
+    for (const id of arrayOfIDs) {
+      const component = await this.findOne(id);
+      console.log(`Updating prices for ${component.name}`);
+      await this.searchPricesByName(id, component.name);
+      console.log(`Prices updated for ${component.name}`);
+      console.log(`Waiting for 1 minute before updating prices for next component to not get blocked by the websites`);
+
+      //change for 1 minutes
+      await new Promise(resolve => setTimeout(resolve, 60000));
+    }
   }
 }
