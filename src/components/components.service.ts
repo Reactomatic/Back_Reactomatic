@@ -144,17 +144,29 @@ export class ComponentsService {
             for (const productElement of productElements) {
 
               const sponsorLabel = await productElement.$('.a-color-base');
-              const isSponsored = sponsorLabel && (await page.evaluate(el => (el as HTMLElement).innerText.includes('Sponsorisé'), sponsorLabel));
 
-              if (isSponsored) {
-                const wrongLink = await productElement.$eval('a.a-link-normal', el => el.href);  // Get the link of the sponsored item
-                console.log(`Skipping sponsored item with link: ${wrongLink}`);
-                continue;  // Skip the sponsored item
+              const isSponsored = sponsorLabel && (await page.evaluate(el => {
+                const text = (el as HTMLElement).innerText;
+                return text.includes('Sponsorisé') || text.includes('Sponsored');
+              }, sponsorLabel));
+
+              // Get the link of the product
+              const linkElement = await productElement.$(retailer.linkSelector);
+              const link = linkElement ? await linkElement.evaluate(el => el.getAttribute('href')) : null;
+
+              // Check if the link contains the "aax-eu.amazon.fr" domain (indicating it's a sponsored product)
+              const isSponsoredLink = link && link.includes("https://aax-eu.amazon.fr");
+
+              // Skip if the product is sponsored (either by label or link)
+              if (isSponsored || isSponsoredLink) {
+                console.log(`Skipping sponsored item with link: ${link}, isSponsored: ${isSponsored}, isSponsoredLink: ${isSponsoredLink}`);
+                continue;  // Skip sponsored item
               }
+
+
 
               // Also check if the item actually contains a price (to skip ads or irrelevant items)
               const priceElement = await productElement.$(retailer.priceSelector);
-              const linkElement = await productElement.$(retailer.linkSelector);
 
               if (!isSponsored && priceElement && linkElement) {
                 const price = await priceElement.evaluate(el => {
@@ -275,6 +287,7 @@ export class ComponentsService {
   @Cron('0 0 0 * * *')
   async updatePrices(): Promise<void> {
     const arrayOfIDs = [1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61];
+    //const arrayOfIDs = [1];
     for (const id of arrayOfIDs) {
       const component = await this.findOne(id);
       console.log(`Updating prices for ${component.name}`);
