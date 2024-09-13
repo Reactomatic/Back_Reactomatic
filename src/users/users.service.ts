@@ -92,4 +92,12 @@ export class UsersService {
       throw new InternalServerErrorException(`Error updating profile for user with ID ${userId}: ${error.message}`);
     }
   }
+
+  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+    try {
+      await this.usersRepository.update(userId, { password: hashedPassword });
+    } catch (error) {
+      throw new InternalServerErrorException(`Error updating password: ${error.message}`);
+    }
+  }
 }
