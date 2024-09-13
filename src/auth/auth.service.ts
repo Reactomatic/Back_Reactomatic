@@ -59,8 +59,18 @@ export class AuthService {
       const token = this.jwtService.sign({ email: user.email, sub: user.id, role: user.role });
 
       // Send confirmation email
-      const confirmationLink = `https://reactomatic.fr/confirm?token=${token}`;
-      const emailContent = `<p>Thank you for registering! Please confirm your email by clicking on the following link: <a href="${confirmationLink}">Confirm Email</a></p>`;
+      const confirmationLink = `https://reactomatic.fr/confirm-email?token=${token}`;
+      const emailContent = `
+        <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+          <h2 style="color: #0d6efd;">Welcome to Reactomatic!</h2>
+          <p>Thank you for registering. Please confirm your email by clicking on the link below:</p>
+          <p><a style="display: inline-block; padding: 10px 20px; margin-top: 20px; font-size: 18px; font-weight: bold; color: #fff; background-color: #0d6efd; text-decoration: none; border-radius: 5px;" href="${confirmationLink}">Confirm Email</a></p>
+          <br>
+          <p>If you did not sign up for this account, you can ignore this email.</p>
+          <p>Thanks, <br> The Reactomatic Team</p>
+        </div>
+      `;
+
       await this.mailService.sendEmail(user.email, 'Email Confirmation', emailContent);
 
       return { user, access_token: token };
@@ -79,7 +89,16 @@ export class AuthService {
 
       // Send reset password email
       const resetLink = `https://reactomatic.fr/reset-password?token=${resetToken}`;
-      const emailContent = `<p>Click on the following link to reset your password: <a href="${resetLink}">Reset Password</a></p>`;
+      const emailContent = `
+        <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+          <h2 style="color: #0d6efd;">Reset Your Password</h2>
+          <p>We received a request to reset your password. Click on the link below to choose a new password:</p>
+          <p><a style="display: inline-block; padding: 10px 20px; margin-top: 20px; font-size: 18px; font-weight: bold; color: #fff; background-color: #0d6efd; text-decoration: none; border-radius: 5px;" href="${resetLink}">Reset Password</a></p>
+          <br>
+          <p>If you didn't request this, you can ignore this email.</p>
+          <p>Thanks, <br> The Reactomatic Team</p>
+        </div>
+      `;
       await this.mailService.sendEmail(user.email, 'Reset Password', emailContent);
     } catch (error) {
       throw new InternalServerErrorException(`Error during password reset: ${error.message}`);
