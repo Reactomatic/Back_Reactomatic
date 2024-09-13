@@ -12,4 +12,3 @@ import { Component } from '../components/entities/component.entity';
   controllers: [ConfigurationController],
 })
 export class ConfigurationModule {}
-

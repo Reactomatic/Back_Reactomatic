@@ -5,6 +5,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { Request } from 'express';
 import { UsersService } from 'src/users/users.service';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -44,5 +45,12 @@ export class AuthController {
     const userId = req.user['userId'];
     return this.usersService.updateProfile(userId, updateProfileDto);
   }
+
+  @Post('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    await this.authService.resetPassword(resetPasswordDto);
+    return { message: 'Password reset successful' };
+  }
+
 
 }
