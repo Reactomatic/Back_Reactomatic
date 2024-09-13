@@ -120,16 +120,12 @@ export class ComponentsService {
       { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.fr' },
       { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.de' },
       { name: 'LDLC', url: `https://www.ldlc.com/recherche/${name}`, priceSelector: 'li.pdt-item div.basket div.price', linkSelector: 'li.pdt-item h3.title-3 a', domain: 'https://www.ldlc.com' },
-      { name: 'Cybertek', url: `https://www.cybertek.fr/boutique/produit.aspx?q=${name}`, priceSelector: 'div.grb__liste-produit__liste__produit__achat__prix ', linkSelector: 'a.prod_txt_left', domain: 'https://www.cybertek.fr' },
+      { name: 'Cybertek', url: `https://www.cybertek.fr/boutique/produit.aspx?q=${name}`, listSelector: '.grb__liste-produit__liste__produit' },
     ];
-
     const newPriceByRetailer = [];
-
     try {
       for (const retailer of retailers) {
         const page = await browser.newPage();
-
-
         await page.goto(retailer.url, { waitUntil: 'domcontentloaded' });
 
         try {
@@ -159,7 +155,7 @@ export class ComponentsService {
 
               // Skip if the product is sponsored (either by label or link)
               if (isSponsored || isSponsoredLink) {
-                console.log(`Skipping sponsored item with link: ${link}, isSponsored: ${isSponsored}, isSponsoredLink: ${isSponsoredLink}`);
+                console.log(`Skipping sponsored item`);
                 continue;  // Skip sponsored item
               }
 
@@ -177,14 +173,13 @@ export class ComponentsService {
                 });
 
                 const link = await linkElement.evaluate(el => el.getAttribute('href'));
-                console.log(`Link found: ${link}`);
 
                 newPriceByRetailer.push({
                   retailer: retailer.name,
                   price,
                   url: `${retailer.domain}${link}`,
                 });
-                console.log(`Price found for ${retailer.name}: ${price}`);
+                console.log(`Price found for ${retailer.name}: ${price} for ${name} with link ${link}`);
                 break;  // Stop the loop after finding the first price
               }
             }
@@ -206,44 +201,66 @@ export class ComponentsService {
               })
 
               const link = await linkElement.evaluate(el => el.getAttribute('href'));
-              console.log(link)
-
               newPriceByRetailer.push({
                 retailer: retailer.name,
                 price,
                 url: `${retailer.domain}${link}`,
               });
-              console.log(`Price found for ${retailer.name}: ${price}`);
+              console.log(`Price found for ${retailer.name}: ${price} for ${name} with link ${link}`);
             }
 
           }
           if (retailer.name === 'Cybertek') {
             console.log(`Searching for ${retailer.name} prices`);
-            await page.waitForSelector(retailer.priceSelector, { timeout: 10000 });
-            await page.waitForSelector(retailer.linkSelector, { timeout: 10000 });
+            // Wait for both the price container and the link to load
+            await page.waitForSelector(retailer.listSelector, { timeout: 10000 });
 
-            const priceElement = await page.$(retailer.priceSelector);
-            const linkElement = await page.$(retailer.linkSelector);
-            if (priceElement && linkElement) {
+            const productElements = await page.$$(retailer.listSelector);
+            for (const nameElement of productElements) {
+              const productName = await nameElement.$eval('h2', el => el.innerText.trim());
+              const elementLink = await nameElement.$eval('a', el => el.getAttribute('href').trim());
 
-              const price = await priceElement.evaluate(el => {
-                let text = el.textContent.replace(/[^\d,]/g, '');  // Supprime tout sauf les chiffres et les virgules
-                text = text.replace(',', '');  // Enlève la virgule
-                text = text.slice(0, -2) + '.' + text.slice(-2);  // Ajoute un point avant les deux derniers chiffres
-                return parseFloat(text);  // Convertit le texte en nombre flottant
-              })
+              const priceOfProduct = await nameElement.$('div.grb__liste-produit__liste__produit__achat__prix')
 
-              const link = await linkElement.evaluate(el => el.getAttribute('href'));
-              console.log(link)
+              if (priceOfProduct) {
+                const priceWithtoutReduction = await priceOfProduct.$('span:not(.barre)');
+                const ElementWithBarrePrice = await priceOfProduct.$('p.barre');
+                if (ElementWithBarrePrice) {
+                  if (productName.toLowerCase().includes(name.toLowerCase())) {
+                    const price = await priceWithtoutReduction.evaluate(el => {
+                      let text = el.textContent.replace(/[^\d,]/g, '');  // Keep only numbers and commas
+                      text = text.replace(',', '');  // Remove commas
+                      text = text.slice(0, -2) + '.' + text.slice(-2);  // Insert a dot before the last two digits
+                      return parseFloat(text);  // Convert text to floating-point number
+                    });
+                    console.log(`Price found for ${retailer.name}: ${price} on ${productName} with link ${elementLink}`);
+                    newPriceByRetailer.push({
+                      retailer: retailer.name,
+                      price,
+                      url: `${elementLink}`,
+                    });
+                    break;
+                  }
+                } else {
+                  const price = await priceWithtoutReduction.evaluate(el => {
+                    let text = el.textContent.replace(/[^\d,]/g, '');  // Keep only numbers and commas
+                    text = text.replace(',', '');  // Remove commas
+                    text = text.slice(0, -2) + '.' + text.slice(-2);  // Insert a dot before the last two digits
+                    return parseFloat(text);  // Convert text to floating-point number
+                  });
+                  console.log(`Price found for ${retailer.name}: ${price} on ${productName} with link ${elementLink}`);
 
-              newPriceByRetailer.push({
-                retailer: retailer.name,
-                price,
-                url: `${link}`,
-              });
-              console.log(`Price found for ${retailer.name}: ${price}`);
+                  newPriceByRetailer.push({
+                    retailer: retailer.name,
+                    price,
+                    url: `${elementLink}`,
+                  });
+                  break;
+                }
+              }
             }
           }
+
         } catch (error) {
           this.logger.error(`Error searching prices for ${retailer.name}: ${error.message}`);
         }
@@ -266,21 +283,6 @@ export class ComponentsService {
       component.priceByRetailer = mergedPriceByRetailer;
       await this.componentsRepository.save(component);
     }
-
-    /*         // Check if prices were found for each retailer
-        if (priceByRetailer.length === retailers.length) {
-          console.log('All prices and links were found for all retailers');
-        } else {
-          console.log('Some prices or links were missing');
-        }
-    
-        if (priceByRetailer.length > 0) {
-          const minPriceRetailer = priceByRetailer.reduce((prev, curr) => curr.price < prev.price ? curr : prev);
-          component.price = minPriceRetailer.price;
-          component.priceByRetailer = priceByRetailer;
-          await this.componentsRepository.save(component);
-        } */
-
     return { mergedPriceByRetailer };
   }
 
@@ -290,7 +292,7 @@ export class ComponentsService {
     //const arrayOfIDs = [1];
     for (const id of arrayOfIDs) {
       const component = await this.findOne(id);
-      console.log(`Updating prices for ${component.name}`);
+      console.log(`Searching prices for ${component.name}`);
       await this.searchPricesByName(id, component.name);
       console.log(`Prices updated for ${component.name}`);
       console.log(`Waiting for 1 minute before updating prices for next component to not get blocked by the websites`);
