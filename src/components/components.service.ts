@@ -34,7 +34,7 @@ export class ComponentsService {
     } catch (error) {
       this.logger.error(`Error creating component: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Failed to create component');
-    }
+    } 
   }
 
 
@@ -286,21 +286,42 @@ export class ComponentsService {
     return { mergedPriceByRetailer };
   }
 
-  @Cron('0 0 0 * * *')
-  async updatePrices(): Promise<void> {
-    const arrayOfIDs = [1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61];
-    //const arrayOfIDs = [1];
-    for (const id of arrayOfIDs) {
-      const component = await this.findOne(id);
-      console.log(`Searching prices for ${component.name}`);
-      await this.searchPricesByName(id, component.name);
-      console.log(`Prices updated for ${component.name}`);
-      console.log(`Waiting for 1 minute before updating prices for next component to not get blocked by the websites`);
+  // @Cron('0 0 0 * * *')
+  // async updatePrices(): Promise<void> {
+  //   const arrayOfIDs = [1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61];
+  //   //const arrayOfIDs = [1];
+  //   for (const id of arrayOfIDs) {
+  //     const component = await this.findOne(id);
+  //     console.log(`Searching prices for ${component.name}`);
+  //     await this.searchPricesByName(id, component.name);
+  //     console.log(`Prices updated for ${component.name}`);
+  //     console.log(`Waiting for 1 minute before updating prices for next component to not get blocked by the websites`);
 
-      //change for 1 minutes
-      await new Promise(resolve => setTimeout(resolve, 60000));
-    }
-    console.log('All prices updated');
-    return null;
+  //     //change for 1 minutes
+  //     await new Promise(resolve => setTimeout(resolve, 60000));
+  //   }
+  //   console.log('All prices updated');
+  //   return null;
+  // }
+
+  @Cron('0 0 0 * * *')
+async updatePrices(): Promise<void> {
+  // Récupérer tous les composants avec findAll()
+  const components = await this.findAll();
+  
+  // Boucler sur tous les composants
+  for (const component of components) {
+    console.log(`Searching prices for ${component.name}`);
+    await this.searchPricesByName(component.id, component.name);
+    console.log(`Prices updated for ${component.name}`);
+    console.log(`Waiting for 1 minute before updating prices for next component to not get blocked by the websites`);
+
+    // Attendre 1 minute entre les mises à jour pour éviter d'être bloqué
+    await new Promise(resolve => setTimeout(resolve, 60000));
   }
+  
+  console.log('All prices updated');
+  return null;
+}
+
 }
