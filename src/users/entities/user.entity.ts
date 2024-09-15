@@ -38,6 +38,8 @@ export class User {
   })
   role: UserRole;
 
-  @OneToMany(() => Configuration, configuration => configuration.user)
+  @OneToMany(() => Configuration, configuration => configuration.user, {
+    cascade: true,
+  })
   configurations: Configuration[];
 }
