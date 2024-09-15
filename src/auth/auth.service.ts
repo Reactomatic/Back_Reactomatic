@@ -12,7 +12,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService
-  ) {}
+  ) { }
 
   async validateUser(email: string, pass: string): Promise<any> {
     try {
@@ -58,16 +58,12 @@ export class AuthService {
       const user = await this.usersService.create(createUserDto);
       const token = this.jwtService.sign({ email: user.email, sub: user.id, role: user.role });
 
-      // Send confirmation email
-      const confirmationLink = `https://reactomatic.fr/confirm-email?token=${token}`;
       const emailContent = `
         <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
-          <h2 style="color: #0d6efd;">Welcome to Reactomatic!</h2>
-          <p>Thank you for registering. Please confirm your email by clicking on the link below:</p>
-          <p><a style="display: inline-block; padding: 10px 20px; margin-top: 20px; font-size: 18px; font-weight: bold; color: #fff; background-color: #0d6efd; text-decoration: none; border-radius: 5px;" href="${confirmationLink}">Confirm Email</a></p>
-          <br>
-          <p>If you did not sign up for this account, you can ignore this email.</p>
-          <p>Thanks, <br> The Reactomatic Team</p>
+          <h2 style="color: #0d6efd;">Bienvenue sur Reactomatic !</h2>
+          <p>Merci pour votre inscription. Votre compte a été créé avec succès.</p>
+          <p>Si vous n'êtes pas à l'origine de cette inscription, veuillez contacter notre équipe de support immédiatement.</p>
+          <p>Merci, <br> L'équipe de Reactomatic</p>
         </div>
       `;
 
@@ -91,17 +87,39 @@ export class AuthService {
       const resetLink = `https://reactomatic.fr/reset-password?token=${resetToken}`;
       const emailContent = `
         <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
-          <h2 style="color: #0d6efd;">Reset Your Password</h2>
-          <p>We received a request to reset your password. Click on the link below to choose a new password:</p>
-          <p><a style="display: inline-block; padding: 10px 20px; margin-top: 20px; font-size: 18px; font-weight: bold; color: #fff; background-color: #0d6efd; text-decoration: none; border-radius: 5px;" href="${resetLink}">Reset Password</a></p>
+          <h2 style="color: #0d6efd;">Réinitialiser votre mot de passe</h2>
+          <p>Nous avons reçu une demande de réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :</p>
+          <p><a style="display: inline-block; padding: 10px 20px; margin-top: 20px; font-size: 18px; font-weight: bold; color: #fff; background-color: #0d6efd; text-decoration: none; border-radius: 5px;" href="${resetLink}">Réinitialiser le mot de passe</a></p>
           <br>
-          <p>If you didn't request this, you can ignore this email.</p>
-          <p>Thanks, <br> The Reactomatic Team</p>
+          <p>Si vous ne l'avez pas demandé, vous pouvez ignorer cet e-mail.</p>
+          <p>Merci, <br>L'équipe Reactomatic</p>
         </div>
       `;
       await this.mailService.sendEmail(user.email, 'Reset Password', emailContent);
     } catch (error) {
       throw new InternalServerErrorException(`Error during password reset: ${error.message}`);
+    }
+  }
+
+  async sendSupportEmail( 
+    lastName: string,
+    firstName: string,
+    email: string,
+    message: string
+  ): Promise<void> {
+    try {
+      const emailContent = `
+        <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+          <p>Bonjour,</p>
+          <p>${firstName} ${lastName} a envoyé un message de support:</p>
+          <p>${message}</p>
+          <p>Vous pouvez répondre à ${email}</p>
+        </div>
+      `;
+
+      await this.mailService.sendEmail('contact@reactomatic.fr', 'Nouveau message de support', emailContent);
+    } catch (error) {
+      throw new Error(`Erreur lors de l'envoi de l'email de support: ${error.message}`);
     }
   }
 
@@ -121,6 +139,7 @@ export class AuthService {
       throw new InternalServerErrorException(`Error resetting password: ${error.message}`);
     }
   }
+  
 
   async validateOAuthLogin(profile: any) {
     try {
