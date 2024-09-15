@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, UnauthorizedException, NotFoundException, ImATeapotException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
@@ -37,6 +37,9 @@ export class AuthService {
       const user = await this.validateUser(email, password);
       if (!user) {
         throw new UnauthorizedException('Invalid credentials');
+      }
+      if(!user.isActive) {
+        throw new ImATeapotException('Account desactivate')
       }
       const payload = { email: user.email, sub: user.id, role: user.role };
       return { access_token: this.jwtService.sign(payload), user };

@@ -67,7 +67,8 @@ export class UsersService {
         user.password = await argon2.hash(updateUserDto.password);
       }
       user.role = updateUserDto.role;
-
+      user.isActive = updateUserDto.isActive;
+      
       return this.usersRepository.save(user);
     } catch (error) {
       throw new InternalServerErrorException(`Error updating user with ID ${id}: ${error.message}`);
