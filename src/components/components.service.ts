@@ -34,7 +34,7 @@ export class ComponentsService {
     } catch (error) {
       this.logger.error(`Error creating component: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Failed to create component');
-    }
+    } 
   }
 
 
@@ -120,16 +120,12 @@ export class ComponentsService {
       { name: 'Amazon FR', url: `https://www.amazon.fr/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.fr' },
       { name: 'Amazon DE', url: `https://www.amazon.de/s?k=${name}`, priceSelector: '.a-price .a-offscreen', linkSelector: 'a.a-link-normal.a-text-normal', domain: 'https://www.amazon.de' },
       { name: 'LDLC', url: `https://www.ldlc.com/recherche/${name}`, priceSelector: 'li.pdt-item div.basket div.price', linkSelector: 'li.pdt-item h3.title-3 a', domain: 'https://www.ldlc.com' },
-      { name: 'Cybertek', url: `https://www.cybertek.fr/boutique/produit.aspx?q=${name}`, priceSelector: 'div.grb__liste-produit__liste__produit__achat__prix ', linkSelector: 'a.prod_txt_left', domain: 'https://www.cybertek.fr' },
+      { name: 'Cybertek', url: `https://www.cybertek.fr/boutique/produit.aspx?q=${name}`, listSelector: '.grb__liste-produit__liste__produit' },
     ];
-
     const newPriceByRetailer = [];
-
     try {
       for (const retailer of retailers) {
         const page = await browser.newPage();
-
-
         await page.goto(retailer.url, { waitUntil: 'domcontentloaded' });
 
         try {
@@ -144,17 +140,29 @@ export class ComponentsService {
             for (const productElement of productElements) {
 
               const sponsorLabel = await productElement.$('.a-color-base');
-              const isSponsored = sponsorLabel && (await page.evaluate(el => (el as HTMLElement).innerText.includes('Sponsorisé'), sponsorLabel));
 
-              if (isSponsored) {
-                const wrongLink = await productElement.$eval('a.a-link-normal', el => el.href);  // Get the link of the sponsored item
-                console.log(`Skipping sponsored item with link: ${wrongLink}`);
-                continue;  // Skip the sponsored item
+              const isSponsored = sponsorLabel && (await page.evaluate(el => {
+                const text = (el as HTMLElement).innerText;
+                return text.includes('Sponsorisé') || text.includes('Sponsored');
+              }, sponsorLabel));
+
+              // Get the link of the product
+              const linkElement = await productElement.$(retailer.linkSelector);
+              const link = linkElement ? await linkElement.evaluate(el => el.getAttribute('href')) : null;
+
+              // Check if the link contains the "aax-eu.amazon.fr" domain (indicating it's a sponsored product)
+              const isSponsoredLink = link && link.includes("https://aax-eu.amazon.fr");
+
+              // Skip if the product is sponsored (either by label or link)
+              if (isSponsored || isSponsoredLink) {
+                console.log(`Skipping sponsored item`);
+                continue;  // Skip sponsored item
               }
+
+
 
               // Also check if the item actually contains a price (to skip ads or irrelevant items)
               const priceElement = await productElement.$(retailer.priceSelector);
-              const linkElement = await productElement.$(retailer.linkSelector);
 
               if (!isSponsored && priceElement && linkElement) {
                 const price = await priceElement.evaluate(el => {
@@ -165,14 +173,13 @@ export class ComponentsService {
                 });
 
                 const link = await linkElement.evaluate(el => el.getAttribute('href'));
-                console.log(`Link found: ${link}`);
 
                 newPriceByRetailer.push({
                   retailer: retailer.name,
                   price,
                   url: `${retailer.domain}${link}`,
                 });
-                console.log(`Price found for ${retailer.name}: ${price}`);
+                console.log(`Price found for ${retailer.name}: ${price} for ${name} with link ${link}`);
                 break;  // Stop the loop after finding the first price
               }
             }
@@ -194,44 +201,66 @@ export class ComponentsService {
               })
 
               const link = await linkElement.evaluate(el => el.getAttribute('href'));
-              console.log(link)
-
               newPriceByRetailer.push({
                 retailer: retailer.name,
                 price,
                 url: `${retailer.domain}${link}`,
               });
-              console.log(`Price found for ${retailer.name}: ${price}`);
+              console.log(`Price found for ${retailer.name}: ${price} for ${name} with link ${link}`);
             }
 
           }
           if (retailer.name === 'Cybertek') {
             console.log(`Searching for ${retailer.name} prices`);
-            await page.waitForSelector(retailer.priceSelector, { timeout: 10000 });
-            await page.waitForSelector(retailer.linkSelector, { timeout: 10000 });
+            // Wait for both the price container and the link to load
+            await page.waitForSelector(retailer.listSelector, { timeout: 10000 });
 
-            const priceElement = await page.$(retailer.priceSelector);
-            const linkElement = await page.$(retailer.linkSelector);
-            if (priceElement && linkElement) {
+            const productElements = await page.$$(retailer.listSelector);
+            for (const nameElement of productElements) {
+              const productName = await nameElement.$eval('h2', el => el.innerText.trim());
+              const elementLink = await nameElement.$eval('a', el => el.getAttribute('href').trim());
 
-              const price = await priceElement.evaluate(el => {
-                let text = el.textContent.replace(/[^\d,]/g, '');  // Supprime tout sauf les chiffres et les virgules
-                text = text.replace(',', '');  // Enlève la virgule
-                text = text.slice(0, -2) + '.' + text.slice(-2);  // Ajoute un point avant les deux derniers chiffres
-                return parseFloat(text);  // Convertit le texte en nombre flottant
-              })
+              const priceOfProduct = await nameElement.$('div.grb__liste-produit__liste__produit__achat__prix')
 
-              const link = await linkElement.evaluate(el => el.getAttribute('href'));
-              console.log(link)
+              if (priceOfProduct) {
+                const priceWithtoutReduction = await priceOfProduct.$('span:not(.barre)');
+                const ElementWithBarrePrice = await priceOfProduct.$('p.barre');
+                if (ElementWithBarrePrice) {
+                  if (productName.toLowerCase().includes(name.toLowerCase())) {
+                    const price = await priceWithtoutReduction.evaluate(el => {
+                      let text = el.textContent.replace(/[^\d,]/g, '');  // Keep only numbers and commas
+                      text = text.replace(',', '');  // Remove commas
+                      text = text.slice(0, -2) + '.' + text.slice(-2);  // Insert a dot before the last two digits
+                      return parseFloat(text);  // Convert text to floating-point number
+                    });
+                    console.log(`Price found for ${retailer.name}: ${price} on ${productName} with link ${elementLink}`);
+                    newPriceByRetailer.push({
+                      retailer: retailer.name,
+                      price,
+                      url: `${elementLink}`,
+                    });
+                    break;
+                  }
+                } else {
+                  const price = await priceWithtoutReduction.evaluate(el => {
+                    let text = el.textContent.replace(/[^\d,]/g, '');  // Keep only numbers and commas
+                    text = text.replace(',', '');  // Remove commas
+                    text = text.slice(0, -2) + '.' + text.slice(-2);  // Insert a dot before the last two digits
+                    return parseFloat(text);  // Convert text to floating-point number
+                  });
+                  console.log(`Price found for ${retailer.name}: ${price} on ${productName} with link ${elementLink}`);
 
-              newPriceByRetailer.push({
-                retailer: retailer.name,
-                price,
-                url: `${link}`,
-              });
-              console.log(`Price found for ${retailer.name}: ${price}`);
+                  newPriceByRetailer.push({
+                    retailer: retailer.name,
+                    price,
+                    url: `${elementLink}`,
+                  });
+                  break;
+                }
+              }
             }
           }
+
         } catch (error) {
           this.logger.error(`Error searching prices for ${retailer.name}: ${error.message}`);
         }
@@ -254,38 +283,45 @@ export class ComponentsService {
       component.priceByRetailer = mergedPriceByRetailer;
       await this.componentsRepository.save(component);
     }
-
-    /*         // Check if prices were found for each retailer
-        if (priceByRetailer.length === retailers.length) {
-          console.log('All prices and links were found for all retailers');
-        } else {
-          console.log('Some prices or links were missing');
-        }
-    
-        if (priceByRetailer.length > 0) {
-          const minPriceRetailer = priceByRetailer.reduce((prev, curr) => curr.price < prev.price ? curr : prev);
-          component.price = minPriceRetailer.price;
-          component.priceByRetailer = priceByRetailer;
-          await this.componentsRepository.save(component);
-        } */
-
     return { mergedPriceByRetailer };
   }
 
-  @Cron('0 0 0 * * *')
-  async updatePrices(): Promise<void> {
-    const arrayOfIDs = [1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61];
-    for (const id of arrayOfIDs) {
-      const component = await this.findOne(id);
-      console.log(`Updating prices for ${component.name}`);
-      await this.searchPricesByName(id, component.name);
-      console.log(`Prices updated for ${component.name}`);
-      console.log(`Waiting for 1 minute before updating prices for next component to not get blocked by the websites`);
+  // @Cron('0 0 0 * * *')
+  // async updatePrices(): Promise<void> {
+  //   const arrayOfIDs = [1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61];
+  //   //const arrayOfIDs = [1];
+  //   for (const id of arrayOfIDs) {
+  //     const component = await this.findOne(id);
+  //     console.log(`Searching prices for ${component.name}`);
+  //     await this.searchPricesByName(id, component.name);
+  //     console.log(`Prices updated for ${component.name}`);
+  //     console.log(`Waiting for 1 minute before updating prices for next component to not get blocked by the websites`);
 
-      //change for 1 minutes
-      await new Promise(resolve => setTimeout(resolve, 60000));
-    }
-    console.log('All prices updated');
-    return null;
+  //     //change for 1 minutes
+  //     await new Promise(resolve => setTimeout(resolve, 60000));
+  //   }
+  //   console.log('All prices updated');
+  //   return null;
+  // }
+
+  @Cron('0 0 0 * * *')
+async updatePrices(): Promise<void> {
+  // Récupérer tous les composants avec findAll()
+  const components = await this.findAll();
+  
+  // Boucler sur tous les composants
+  for (const component of components) {
+    console.log(`Searching prices for ${component.name}`);
+    await this.searchPricesByName(component.id, component.name);
+    console.log(`Prices updated for ${component.name}`);
+    console.log(`Waiting for 1 minute before updating prices for next component to not get blocked by the websites`);
+
+    // Attendre 1 minute entre les mises à jour pour éviter d'être bloqué
+    await new Promise(resolve => setTimeout(resolve, 60000));
   }
+  
+  console.log('All prices updated');
+  return null;
+}
+
 }

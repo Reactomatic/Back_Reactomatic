@@ -37,6 +37,12 @@ export class ComponentsController {
     //return this.componentsService.updatePrices();
   }
 
+  @Post(':id/searchAllComponents')
+  searchPriceAllComponents(@Param('id') id: string, @Body() name: string) {
+    //return this.componentsService.searchPricesByName(+id, name);
+    return this.componentsService.updatePrices();
+  }
+
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Post()
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
