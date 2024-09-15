@@ -27,6 +27,21 @@ export class AuthController {
     return this.authService.forgotPassword(body.email);
   }
 
+  @Post('support-email')
+  async sendSupportEmail(
+    @Body('lastName') lastName: string,
+    @Body('firstName') firstName: string,
+    @Body('email') email: string,
+    @Body('message') message: string,
+  ) {
+    try {
+      await this.authService.sendSupportEmail(lastName, firstName, email, message);
+      return { message: 'Email de support envoyé avec succès!' };
+    } catch (error) {
+      return { message: 'Erreur lors de l\'envoi de l\'email de support', error: error.message };
+    }
+  }
+
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth(@Req() req) {
