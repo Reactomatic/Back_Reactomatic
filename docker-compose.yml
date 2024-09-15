@@ -11,34 +11,5 @@ services:
       POSTGRES_USER: admin_reactomatic
       POSTGRES_PASSWORD: RlSNVOnUmcz7VSrj
       POSTGRES_DB: reactomatic
-    networks:
-      - reactomatic-network
-
-  nest-app:
-    build:
-      dockerfile: Dockerfile
-      context: .
-      target: development
-    command: npm run start:dev
-    depends_on:
-      - pgsql
-    ports:
-      - "3000:3000"
-    container_name: back_reactomatic
-    env_file:
-      - .env #Load from env file
-    environment:
-      DATABASE_URL: postgres://admin_reactomatic:RlSNVOnUmcz7VSrj@pgsqlReactomatic:5432/reactomatic
-
-    volumes: 
-      - .:/app
-      - /app/node_modules
-    networks:
-      - reactomatic-network
-
 volumes:
   pg-data:
-
-networks:
-  reactomatic-network:
-    driver: bridge

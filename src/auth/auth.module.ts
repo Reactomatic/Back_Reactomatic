@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GoogleStrategy } from './google.strategy';
+import { MailService } from 'src/mails/mail.service';
 
 @Module({
   imports: [
@@ -19,9 +20,9 @@ import { GoogleStrategy } from './google.strategy';
         signOptions: { expiresIn: '60m' },
       }),
     }),
-    UsersModule
+    UsersModule,
   ],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, MailService],
   controllers: [AuthController],
   exports: [AuthService, JwtModule],
   

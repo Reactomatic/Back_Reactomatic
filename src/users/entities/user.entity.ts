@@ -1,39 +1,43 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Configuration } from 'src/configurations/entities/configuration.entity';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 
 export enum UserRole {
-    ADMIN = 'admin',
-    MANAGER = 'manager',
-    USER = 'user',
-    GUEST = 'guest',
-  }
+  ADMIN = 'admin',
+  MANAGER = 'manager',
+  USER = 'user',
+  GUEST = 'guest',
+}
 
 @Entity()
 export class User {
-    @PrimaryGeneratedColumn()
-    id: number;
-    
-    @Column()
-    firstName: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column()
-    lastName: string;
+  @Column()
+  firstName: string;
 
-    @Column({ default: true })
-    isActive: boolean;
+  @Column()
+  lastName: string;
 
-    @Column()
-    email: string;
+  @Column({ default: true })
+  isActive: boolean;
 
-    @Column({ nullable: true })
-    picture?: string;
+  @Column()
+  email: string;
 
-    @Column()
-    password: string;
+  @Column({ nullable: true })
+  picture?: string;
 
-    @Column({
-        type: 'enum',
-        enum: UserRole,
-        default: UserRole.USER
-      })
-      role: UserRole;
+  @Column()
+  password: string;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.USER
+  })
+  role: UserRole;
+
+  @OneToMany(() => Configuration, configuration => configuration.user)
+  configurations: Configuration[];
 }

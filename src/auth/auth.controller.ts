@@ -5,6 +5,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { Request } from 'express';
 import { UsersService } from 'src/users/users.service';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -26,6 +27,21 @@ export class AuthController {
     return this.authService.forgotPassword(body.email);
   }
 
+  @Post('support-email')
+  async sendSupportEmail(
+    @Body('lastName') lastName: string,
+    @Body('firstName') firstName: string,
+    @Body('email') email: string,
+    @Body('message') message: string,
+  ) {
+    try {
+      await this.authService.sendSupportEmail(lastName, firstName, email, message);
+      return { message: 'Email de support envoyé avec succès!' };
+    } catch (error) {
+      return { message: 'Erreur lors de l\'envoi de l\'email de support', error: error.message };
+    }
+  }
+
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth(@Req() req) {
@@ -44,5 +60,12 @@ export class AuthController {
     const userId = req.user['userId'];
     return this.usersService.updateProfile(userId, updateProfileDto);
   }
+
+  @Post('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    await this.authService.resetPassword(resetPasswordDto);
+    return { message: 'Password reset successful' };
+  }
+
 
 }
