@@ -304,24 +304,24 @@ export class ComponentsService {
   //   return null;
   // }
 
-  @Cron('0 0 0 * * *')
-async updatePrices(): Promise<void> {
-  // Récupérer tous les composants avec findAll()
-  const components = await this.findAll();
+//   @Cron('0 0 0 * * *')
+// async updatePrices(): Promise<void> {
+//   // Récupérer tous les composants avec findAll()
+//   const components = await this.findAll();
   
-  // Boucler sur tous les composants
-  for (const component of components) {
-    console.log(`Searching prices for ${component.name}`);
-    await this.searchPricesByName(component.id, component.name);
-    console.log(`Prices updated for ${component.name}`);
-    console.log(`Waiting for 1 minute before updating prices for next component to not get blocked by the websites`);
+//   // Boucler sur tous les composants
+//   for (const component of components) {
+//     console.log(`Searching prices for ${component.name}`);
+//     await this.searchPricesByName(component.id, component.name);
+//     console.log(`Prices updated for ${component.name}`);
+//     console.log(`Waiting for 1 minute before updating prices for next component to not get blocked by the websites`);
 
-    // Attendre 1 minute entre les mises à jour pour éviter d'être bloqué
-    await new Promise(resolve => setTimeout(resolve, 60000));
-  }
+//     // Attendre 1 minute entre les mises à jour pour éviter d'être bloqué
+//     await new Promise(resolve => setTimeout(resolve, 60000));
+//   }
   
-  console.log('All prices updated');
-  return null;
-}
+//   console.log('All prices updated');
+//   return null;
+// }
 
 }
