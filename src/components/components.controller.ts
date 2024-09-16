@@ -39,8 +39,8 @@ export class ComponentsController {
 
   @Post(':id/searchAllComponents')
   searchPriceAllComponents(@Param('id') id: string, @Body() name: string) {
-    //return this.componentsService.searchPricesByName(+id, name);
-    return this.componentsService.updatePrices();
+    return this.componentsService.searchPricesByName(+id, name);
+    //return this.componentsService.updatePrices();
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
