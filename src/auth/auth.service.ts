@@ -5,6 +5,7 @@ import * as argon2 from 'argon2';
 import { MailService } from '../mails/mail.service';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 
 @Injectable()
 export class AuthService {
@@ -15,25 +16,20 @@ export class AuthService {
   ) { }
 
   async validateUser(email: string, pass: string): Promise<any> {
-    try {
-      const user = await this.usersService.findByEmail(email);
-      if (!user) {
-        return null;
-      }
-      const passwordMatch = await argon2.verify(user.password, pass);
-      if (passwordMatch) {
-        const { password, ...result } = user;
-        return result;
-      } else {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-    } catch (error) {
-      throw new InternalServerErrorException(`Error validating user: ${error.message}`);
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      return null;
+    }
+    const passwordMatch = await argon2.verify(user.password, pass);
+    if (passwordMatch) {
+      const { password, ...result } = user;
+      return result;
+    } else {
+      throw new UnauthorizedException('Invalid credentials');
     }
   }
 
   async login(email: string, password: string) {
-    try {
       const user = await this.validateUser(email, password);
       if (!user) {
         throw new UnauthorizedException('Invalid credentials');
@@ -41,15 +37,12 @@ export class AuthService {
       if(!user.isActive) {
         throw new ImATeapotException('Account desactivate')
       }
+
       const payload = { email: user.email, sub: user.id, role: user.role };
       return { access_token: this.jwtService.sign(payload), user };
-    } catch (error) {
-      throw new InternalServerErrorException(`Error during login: ${error.message}`);
-    }
   }
 
   async register(createUserDto: CreateUserDto) {
-    try {
       const userExists = await this.usersService.findByEmail(createUserDto.email);
       if (userExists) {
         throw new UnauthorizedException('User already exists');
@@ -73,9 +66,7 @@ export class AuthService {
       await this.mailService.sendEmail(user.email, 'Email Confirmation', emailContent);
 
       return { user, access_token: token };
-    } catch (error) {
-      throw new InternalServerErrorException(`Error registering user: ${error.message}`);
-    }
+    
   }
 
   async forgotPassword(email: string): Promise<void> {
